@@ -695,6 +695,17 @@ function renderDealsResults(results) {
   // Store for detail view
   window.analyzedDeals = results;
 
+  // Send Telegram alerts for hot deals (dedup applied inside telegramService)
+  if (window.telegramService && window.telegramService.isConfigured) {
+    results
+      .filter((deal) => deal.isHot)
+      .forEach((deal) => {
+        window.telegramService.sendDealAlert(deal).catch((err) => {
+          console.error("[VinylFort] Telegram alert failed:", err.message);
+        });
+      });
+  }
+
   // Evaluate auto-buy candidates (confirm mode)
   evaluateAutoBuyCandidates(results);
 }
@@ -805,6 +816,16 @@ function evaluateAutoBuyCandidates(results) {
 
   window.autoBuyCandidates = candidates;
   showToast(`Auto-buy candidates found: ${candidates.length}`, "warning");
+
+  // Send Telegram notifications for each qualifying candidate
+  if (window.telegramService && window.telegramService.isConfigured) {
+    candidates.forEach((deal) => {
+      window.telegramService.sendDealAlert(deal).catch((err) => {
+        console.error("[VinylFort] Telegram alert failed:", err.message);
+      });
+    });
+  }
+
   showAutoBuyModal(0);
 }
 
