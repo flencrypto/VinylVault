@@ -580,6 +580,172 @@
           </div>
         </div>
 
+        <!-- Telegram Alerts Section -->
+        <div class="bg-surface-light rounded-2xl p-8 border border-gray-800">
+          <div class="flex items-center gap-3 mb-6">
+            <div
+              class="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center"
+            >
+              <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-200">Telegram Alerts</h2>
+              <p class="text-sm text-gray-500">
+                Receive instant notifications when undervalued vinyl deals are detected
+              </p>
+            </div>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Bot Token -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Bot Token</label>
+              <div class="relative">
+                <input
+                  type="password"
+                  id="telegramBotToken"
+                  placeholder="123456789:ABCdefGHIjklMNOpqrSTUvwxYZ"
+                  class="w-full px-4 py-3 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm pr-10"
+                  autocomplete="off"
+                  aria-label="Telegram bot token"
+                />
+                <button
+                  onclick="toggleTelegramTokenVisibility()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                >
+                  <i data-feather="eye" class="w-5 h-5"></i>
+                </button>
+              </div>
+              <p class="text-xs text-gray-600 mt-2">
+                Message <strong class="text-gray-500">@BotFather</strong> on Telegram → /newbot → copy the token
+              </p>
+            </div>
+
+            <!-- Chat ID -->
+            <div>
+              <label class="block text-sm text-gray-400 mb-2">Chat ID</label>
+              <input
+                type="text"
+                id="telegramChatId"
+                placeholder="e.g. 123456789 or -100123456789"
+                class="w-full px-4 py-3 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
+                autocomplete="off"
+                aria-label="Telegram chat ID"
+              />
+              <p class="text-xs text-gray-600 mt-2">
+                Message <strong class="text-gray-500">@userinfobot</strong> on Telegram to get your chat ID
+              </p>
+            </div>
+
+            <!-- Alert Thresholds -->
+            <div class="pt-4 border-t border-gray-800">
+              <h3 class="text-sm font-medium text-gray-300 mb-4">Alert Thresholds</h3>
+              <div class="space-y-3">
+                <!-- Enable toggle -->
+                <div class="flex items-center justify-between">
+                  <div>
+                    <p class="text-gray-300 text-sm font-medium">Enable Telegram Alerts</p>
+                    <p class="text-xs text-gray-500">Send deal notifications to Telegram</p>
+                  </div>
+                  <label class="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="telegramEnabled"
+                      class="sr-only peer"
+                      aria-label="Enable Telegram alerts"
+                    />
+                    <div
+                      class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"
+                    ></div>
+                  </label>
+                </div>
+
+                <!-- Threshold inputs grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">Minimum ROI (%)</label>
+                    <input
+                      type="number"
+                      id="telegramMinRoi"
+                      value="40"
+                      min="0"
+                      max="500"
+                      class="w-full px-3 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
+                      aria-label="Minimum ROI threshold"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">Minimum Profit (£)</label>
+                    <input
+                      type="number"
+                      id="telegramMinProfit"
+                      value="8"
+                      min="0"
+                      step="0.5"
+                      class="w-full px-3 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
+                      aria-label="Minimum profit threshold"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">Maximum Buy Price (£)</label>
+                    <input
+                      type="number"
+                      id="telegramMaxPrice"
+                      value="100"
+                      min="1"
+                      class="w-full px-3 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
+                      aria-label="Maximum buy price"
+                    />
+                  </div>
+                  <div>
+                    <label class="block text-xs text-gray-500 mb-1">Minimum Condition</label>
+                    <select
+                      id="telegramMinCondition"
+                      class="w-full px-3 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
+                      aria-label="Minimum condition"
+                    >
+                      <option value="P">P</option>
+                      <option value="F">F</option>
+                      <option value="G">G</option>
+                      <option value="G+">G+</option>
+                      <option value="VG">VG</option>
+                      <option value="VG+" selected>VG+</option>
+                      <option value="NM">NM</option>
+                      <option value="M">M</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="flex items-center justify-between pt-4 border-t border-gray-800"
+            >
+              <div class="flex items-center gap-2 text-sm" id="telegramStatus">
+                <span class="w-2 h-2 rounded-full bg-gray-600"></span>
+                <span class="text-gray-500">Not configured</span>
+              </div>
+              <div class="flex gap-3">
+                <button
+                  onclick="testTelegramConnection()"
+                  class="px-4 py-2 border border-gray-600 rounded-lg text-sm text-gray-300 hover:border-sky-500 hover:text-sky-400 transition-all flex items-center gap-2"
+                >
+                  Test Connection
+                </button>
+                <button
+                  onclick="saveTelegramSettings()"
+                  class="px-6 py-2 bg-sky-600 rounded-lg font-medium text-white hover:bg-sky-500 transition-all flex items-center gap-2"
+                >
+                  <i data-feather="save" class="w-4 h-4"></i>
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- General Settings -->
         <div class="bg-surface-light rounded-2xl p-8 border border-gray-800">
           <h2 class="text-xl font-semibold text-gray-200 mb-6">
@@ -657,6 +823,7 @@
     <script src="components/vinyl-footer.js"></script>
     <script src="components/discogs-service.js"></script>
     <script src="components/ebay-service.js"></script>
+    <script src="components/telegram-service.js"></script>
     <!-- Main Script -->
     <script src="script.js"></script>
     <script>
@@ -723,6 +890,26 @@
         if (ebayClientId && ebayClientSecret) {
           updateEbayStatus(true);
         }
+
+        // Telegram credentials
+        const telegramBotToken = localStorage.getItem("telegram_bot_token") || "";
+        const telegramChatId = localStorage.getItem("telegram_chat_id") || "";
+        const telegramAlertsConfig = JSON.parse(
+          localStorage.getItem("telegram_alerts_config") || "{}",
+        );
+        if (telegramBotToken) document.getElementById("telegramBotToken").value = telegramBotToken;
+        if (telegramChatId) document.getElementById("telegramChatId").value = telegramChatId;
+        if (telegramBotToken && telegramChatId) updateTelegramStatus(true);
+        if (telegramAlertsConfig.enabled !== undefined)
+          document.getElementById("telegramEnabled").checked = !!telegramAlertsConfig.enabled;
+        if (telegramAlertsConfig.minRoi !== undefined)
+          document.getElementById("telegramMinRoi").value = telegramAlertsConfig.minRoi;
+        if (telegramAlertsConfig.minProfit !== undefined)
+          document.getElementById("telegramMinProfit").value = telegramAlertsConfig.minProfit;
+        if (telegramAlertsConfig.maxPrice !== undefined)
+          document.getElementById("telegramMaxPrice").value = telegramAlertsConfig.maxPrice;
+        if (telegramAlertsConfig.minCondition)
+          document.getElementById("telegramMinCondition").value = telegramAlertsConfig.minCondition;
       });
 
       function toggleImgbbVisibility() {
@@ -1047,6 +1234,91 @@
         } catch (err) {
           showToast(`eBay Error: ${err.message}`, "error");
           updateEbayStatus(false);
+        }
+      }
+
+      // ---------------------------------------------------------------------------
+      // Telegram settings
+      // ---------------------------------------------------------------------------
+      function toggleTelegramTokenVisibility() {
+        const input = document.getElementById("telegramBotToken");
+        input.type = input.type === "password" ? "text" : "password";
+      }
+
+      function updateTelegramStatus(ok) {
+        const el = document.getElementById("telegramStatus");
+        if (!el) return;
+        el.innerHTML = ok
+          ? '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Configured</span>'
+          : '<span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-500">Not configured</span>';
+      }
+
+      function saveTelegramSettings() {
+        const token = document.getElementById("telegramBotToken").value.trim();
+        const chatId = document.getElementById("telegramChatId").value.trim();
+        const enabled = document.getElementById("telegramEnabled").checked;
+        const minRoi = parseFloat(document.getElementById("telegramMinRoi").value) || 40;
+        const minProfit = parseFloat(document.getElementById("telegramMinProfit").value) || 8;
+        const maxPrice = parseFloat(document.getElementById("telegramMaxPrice").value) || 100;
+        const minCondition = document.getElementById("telegramMinCondition").value || "VG+";
+
+        if (token) {
+          localStorage.setItem("telegram_bot_token", token);
+        } else {
+          localStorage.removeItem("telegram_bot_token");
+        }
+        if (chatId) {
+          localStorage.setItem("telegram_chat_id", chatId);
+        } else {
+          localStorage.removeItem("telegram_chat_id");
+        }
+
+        const alertsConfig = { enabled, minRoi, minProfit, maxPrice, minCondition };
+        localStorage.setItem("telegram_alerts_config", JSON.stringify(alertsConfig));
+
+        if (window.telegramService) {
+          window.telegramService.updateCredentials(token, chatId);
+        }
+
+        updateTelegramStatus(!!(token && chatId));
+        showToast("Telegram settings saved!", "success");
+      }
+
+      async function testTelegramConnection() {
+        const token = document.getElementById("telegramBotToken").value.trim();
+        const chatId = document.getElementById("telegramChatId").value.trim();
+        if (!token || !chatId) {
+          showToast("Please enter both Bot Token and Chat ID first", "error");
+          return;
+        }
+
+        showToast("Sending test message…", "success");
+        try {
+          if (window.telegramService) {
+            window.telegramService.updateCredentials(token, chatId);
+            await window.telegramService.testConnection();
+          } else {
+            // Fallback direct call if service not yet loaded
+            const url = `https://api.telegram.org/bot${token}/sendMessage`;
+            const res = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: "✅ <b>VinylFort connected!</b>\n\nTelegram alerts are working correctly.",
+                parse_mode: "HTML",
+              }),
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              throw new Error(err.description || res.statusText);
+            }
+          }
+          showToast("Test message sent! Check your Telegram.", "success");
+          updateTelegramStatus(true);
+        } catch (err) {
+          showToast(`Telegram Error: ${err.message}`, "error");
+          updateTelegramStatus(false);
         }
       }
 
