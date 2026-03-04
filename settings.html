@@ -41,6 +41,13 @@
           },
         };
     </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
   </head>
   <body class="bg-surface text-gray-100 min-h-screen">
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -1305,7 +1312,7 @@
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: "✅ <b>VinylFort connected!</b>\n\nTelegram alerts are working correctly.",
+                text: "✅ <b>VinylVault connected!</b>\n\nTelegram alerts are working correctly.",
                 parse_mode: "HTML",
               }),
             });

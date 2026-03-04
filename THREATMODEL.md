@@ -7,7 +7,7 @@
 
 ## Scope
 
-High-level STRIDE threat model for VinylFort’s target architecture.
+High-level STRIDE threat model for VinylVault’s target architecture.
 
 ## Data flow (high-level)
 

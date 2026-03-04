@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the improvements made to the Discogs API integration in VinylFort to comply with the official Discogs API requirements and best practices.
+This document describes the improvements made to the Discogs API integration in VinylVault to comply with the official Discogs API requirements and best practices.
 
 ## Changes Made
 
@@ -17,7 +17,7 @@ this.userAgent = "VinylVaultPro/1.0";
 **After:**
 
 ```javascript
-this.userAgent = "VinylVaultPro/1.0 +https://github.com/flencrypto/VinylFort";
+this.userAgent = "VinylVaultPro/1.0 +https://github.com/flencrypto/VinylVault";
 ```
 
 **Why:** The Discogs API requires User-Agent strings to follow RFC 1945 format and include contact information to help identify and communicate with application developers.

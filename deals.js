@@ -701,7 +701,7 @@ function renderDealsResults(results) {
       .filter((deal) => deal.isHot)
       .forEach((deal) => {
         window.telegramService.sendDealAlert(deal).catch((err) => {
-          console.error("[VinylFort] Telegram alert failed:", err.message);
+          console.error("[VinylVault] Telegram alert failed:", err.message);
         });
       });
   }
@@ -821,7 +821,7 @@ function evaluateAutoBuyCandidates(results) {
   if (window.telegramService && window.telegramService.isConfigured) {
     candidates.forEach((deal) => {
       window.telegramService.sendDealAlert(deal).catch((err) => {
-        console.error("[VinylFort] Telegram alert failed:", err.message);
+        console.error("[VinylVault] Telegram alert failed:", err.message);
       });
     });
   }
@@ -1844,7 +1844,7 @@ function openEbaySoldSearch() {
 
 // ─── ValueYourMusic Sold Price Research ──────────────────────────────────────
 
-/** Map VinylFort condition codes to ValueYourMusic URL condition slugs. */
+/** Map VinylVault condition codes to ValueYourMusic URL condition slugs. */
 const VYM_CONDITION_MAP = {
   M: "mint",
   NM: "near-mint",

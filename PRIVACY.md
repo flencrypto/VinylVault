@@ -2,7 +2,7 @@
 
 ## Assumptions
 
-- VinylFort processes user-uploaded images and text extracted from those images.
+- VinylVault processes user-uploaded images and text extracted from those images.
 - Deployment may serve UK/EU users and must align with UK GDPR/GDPR principles.
 
 ## Scope

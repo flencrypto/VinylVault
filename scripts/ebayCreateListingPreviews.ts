@@ -1,7 +1,7 @@
 /**
  * scripts/ebayCreateListingPreviews.ts
  *
- * CLI helper that takes a JSON file of VinylFort records and generates
+ * CLI helper that takes a JSON file of VinylVault records and generates
  * eBay Listing Previews via the Inventory Mapping API.
  *
  * Usage:
@@ -24,7 +24,7 @@ import {
   toExternalProduct,
   startListingPreviews,
   getListingPreviewsTask,
-  type VinylFortRecord,
+  type VinylVaultRecord,
   type ListingPreview,
   type EbayGraphQLClientOptions,
 } from "../src/ebay/inventoryMapping";
@@ -107,12 +107,12 @@ async function main(): Promise<void> {
 
   // Load records
   const raw = readFileSync(resolve(inputPath), "utf8");
-  const records: VinylFortRecord[] = JSON.parse(raw) as VinylFortRecord[];
+  const records: VinylVaultRecord[] = JSON.parse(raw) as VinylVaultRecord[];
   console.log(`Loaded ${records.length} record(s) from ${inputPath}`);
 
   // Convert to eBay external products, assigning SKUs if missing
   const externalProducts = records.map((record, idx) => {
-    const sku = record.sku ?? `vinylfort-${idx + 1}`;
+    const sku = record.sku ?? `vinylvault-${idx + 1}`;
     return toExternalProduct({ ...record, sku }, sku);
   });
 

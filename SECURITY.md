@@ -2,7 +2,7 @@
 
 ## Assumptions
 
-- VinylFort will be deployed as a web app with server-side endpoints handling third-party API credentials.
+- VinylVault will be deployed as a web app with server-side endpoints handling third-party API credentials.
 - User-uploaded images may contain sensitive personal data.
 
 ## Scope

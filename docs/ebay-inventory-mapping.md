@@ -1,4 +1,4 @@
-# eBay Inventory Mapping API (Listing Preview Generator) — VinylFort
+# eBay Inventory Mapping API (Listing Preview Generator) — VinylVault
 
 This integration uses eBay's **Inventory Mapping API** (GraphQL) to generate **Listing Previews** from your existing product data (title, photos, aspects, identifiers, etc.). The preview returns AI recommendations (category, normalized aspects, description, etc.) which you can then feed into eBay listing creation APIs.
 
@@ -47,7 +47,7 @@ From each preview:
 - `title`, `description`, `images`
 - `product.epid` if matched (catalog match)
 
-## VinylFort usage pattern
+## VinylVault usage pattern
 1) Convert your internal inventory record → `ExternalProductDetailsInput` (see `src/ebay/inventoryMapping.ts`)
 2) Start preview creation task (max 10 items per call)
 3) Poll task until `completionStatus` indicates done
@@ -59,7 +59,7 @@ From each preview:
 # Set your eBay user access token
 export EBAY_ACCESS_TOKEN=your_token_here
 
-# Provide a JSON array of VinylFort records; output written to previews.json
+# Provide a JSON array of VinylVault records; output written to previews.json
 npx ts-node scripts/ebayCreateListingPreviews.ts records.json --out previews.json
 ```
 
