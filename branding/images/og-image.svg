@@ -1,0 +1,47 @@
+<!-- VinylFort Open Graph / Social Share Image placeholder — 1200 × 630 px
+     Displayed when users share the app URL on social networks (Twitter/X, Facebook, iMessage, etc.).
+     Replace with your production OG image SVG or export as PNG.
+     DEPLOYMENT: export to static/og-image.png and add:
+       <meta property="og:image" content="/static/og-image.png">
+       <meta name="twitter:image" content="/static/og-image.png">
+     to the <head> of all HTML pages. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="ogGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#0e0c0b"/>
+      <stop offset="100%" stop-color="#1a1613"/>
+    </linearGradient>
+    <radialGradient id="ogGlow" cx="80%" cy="50%" r="45%">
+      <stop offset="0%"   stop-color="#c8973f" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#c8973f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#ogGrad)"/>
+  <rect width="1200" height="630" fill="url(#ogGlow)"/>
+  <!-- Vinyl decoration -->
+  <circle cx="960" cy="315" r="250" fill="none" stroke="#2e2924" stroke-width="3"/>
+  <circle cx="960" cy="315" r="190" fill="none" stroke="#2e2924" stroke-width="2"/>
+  <circle cx="960" cy="315" r="130" fill="none" stroke="#2e2924" stroke-width="2"/>
+  <circle cx="960" cy="315" r="75"  fill="#c8973f" opacity="0.10"/>
+  <circle cx="960" cy="315" r="75"  fill="none" stroke="#c8973f" stroke-width="2"/>
+  <circle cx="960" cy="315" r="18"  fill="#0e0c0b" stroke="#c8973f" stroke-width="2"/>
+  <!-- Logo mark -->
+  <rect x="80" y="80" width="80" height="80" rx="18" fill="#1a1613" stroke="#c8973f" stroke-width="1.5"/>
+  <text x="120" y="130" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="28" font-weight="800" fill="#c8973f">VF</text>
+  <!-- Text content -->
+  <text x="80" y="260" font-family="'Cormorant Garamond',Georgia,serif"
+        font-size="80" font-weight="700" fill="#f5ede2">VinylFort</text>
+  <text x="80" y="340" font-family="Inter,system-ui,sans-serif"
+        font-size="28" fill="#c8b19c">Professional vinyl valuation &amp; marketplace</text>
+  <text x="80" y="390" font-family="Inter,system-ui,sans-serif"
+        font-size="22" fill="#8a6e52">eBay listings · Discogs pricing · Deal finder</text>
+  <!-- CTA pill -->
+  <rect x="80" y="430" width="240" height="52" rx="26" fill="#c8973f"/>
+  <text x="200" y="462" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="18" font-weight="600" fill="#0e0c0b">Get started →</text>
+  <!-- Placeholder label -->
+  <rect x="20" y="596" width="1160" height="24" rx="5" fill="#c8973f" opacity="0.10"/>
+  <text x="600" y="612" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="11" fill="#8a6e52">PLACEHOLDER — 1200 × 630 px — export as PNG to static/og-image.png</text>
+</svg>

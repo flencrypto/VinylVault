@@ -1,0 +1,21 @@
+<!-- VinylFort Page Background placeholder — 1920 × 1080 px
+     Repeating texture or full-bleed image used as the body background.
+     Replace with your production background SVG or export as PNG/WebP.
+     DEPLOYMENT: export to static/background.png and reference from style.css body rule -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <pattern id="groovePattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+      <circle cx="60" cy="60" r="55" fill="none" stroke="#1a1613" stroke-width="1.5"/>
+      <circle cx="60" cy="60" r="40" fill="none" stroke="#1a1613" stroke-width="1"/>
+      <circle cx="60" cy="60" r="25" fill="none" stroke="#1a1613" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="#0e0c0b"/>
+  <rect width="1920" height="1080" fill="url(#groovePattern)" opacity="0.5"/>
+  <!-- Centre label -->
+  <rect x="660" y="490" width="600" height="100" rx="12" fill="#1a1613" stroke="#2e2924" stroke-width="1"/>
+  <text x="960" y="535" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="18" font-weight="600" fill="#c8973f">PLACEHOLDER — Page Background</text>
+  <text x="960" y="562" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="13" fill="#8a6e52">1920 × 1080 px — export as PNG/WebP to static/background.png</text>
+</svg>

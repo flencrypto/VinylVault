@@ -1,0 +1,26 @@
+<!-- VinylFort Primary Logo placeholder — 512 × 512 px
+     Replace this entire file with your production logo SVG.
+     DEPLOYMENT: copy to static/icon-512.svg -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#1a1613"/>
+  <!-- Outer groove ring -->
+  <circle cx="256" cy="256" r="220" fill="none" stroke="#2e2924" stroke-width="4"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#2e2924" stroke-width="2"/>
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#2e2924" stroke-width="2"/>
+  <!-- Vinyl disc body -->
+  <circle cx="256" cy="256" r="200" fill="#0e0c0b"/>
+  <!-- Label area -->
+  <circle cx="256" cy="256" r="80"  fill="#c8973f" opacity="0.15"/>
+  <circle cx="256" cy="256" r="80"  fill="none" stroke="#c8973f" stroke-width="2"/>
+  <!-- Centre spindle hole -->
+  <circle cx="256" cy="256" r="12"  fill="#0e0c0b" stroke="#c8973f" stroke-width="2"/>
+  <!-- Placeholder text -->
+  <text x="256" y="248" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="22" font-weight="700" fill="#c8973f">VINYL</text>
+  <text x="256" y="272" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="22" font-weight="700" fill="#e8c06a">FORT</text>
+  <!-- Placeholder label -->
+  <rect x="20" y="460" width="472" height="32" rx="6" fill="#c8973f" opacity="0.12"/>
+  <text x="256" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="13" fill="#c8b19c">PLACEHOLDER — replace with production logo</text>
+</svg>

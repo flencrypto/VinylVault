@@ -1,0 +1,38 @@
+<!-- VinylFort Hero Banner placeholder — 1440 × 480 px
+     Used as the top-of-page marketing / hero image on the web app.
+     Replace this entire file with your production banner SVG or export as PNG.
+     DEPLOYMENT: export to static/banner.png and reference from index.html hero section -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 480" width="1440" height="480">
+  <defs>
+    <linearGradient id="bannerGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#0e0c0b"/>
+      <stop offset="60%"  stop-color="#1a1613"/>
+      <stop offset="100%" stop-color="#2e2924"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="75%" cy="50%" r="40%">
+      <stop offset="0%"   stop-color="#c8973f" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#c8973f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="480" fill="url(#bannerGrad)"/>
+  <rect width="1440" height="480" fill="url(#glow)"/>
+  <!-- Vinyl grooves decoration -->
+  <circle cx="1100" cy="240" r="320" fill="none" stroke="#2e2924" stroke-width="2" opacity="0.6"/>
+  <circle cx="1100" cy="240" r="260" fill="none" stroke="#2e2924" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="1100" cy="240" r="200" fill="none" stroke="#2e2924" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="1100" cy="240" r="140" fill="none" stroke="#2e2924" stroke-width="1" opacity="0.3"/>
+  <circle cx="1100" cy="240" r="80"  fill="#c8973f" opacity="0.08"/>
+  <circle cx="1100" cy="240" r="80"  fill="none" stroke="#c8973f" stroke-width="1.5"/>
+  <circle cx="1100" cy="240" r="18"  fill="#0e0c0b" stroke="#c8973f" stroke-width="2"/>
+  <!-- Headline text placeholder -->
+  <text x="120" y="200" font-family="'Cormorant Garamond',Georgia,serif"
+        font-size="72" font-weight="700" fill="#f5ede2">Your Banner</text>
+  <text x="120" y="280" font-family="'Cormorant Garamond',Georgia,serif"
+        font-size="72" font-weight="700" fill="#c8973f">Headline Here</text>
+  <text x="120" y="340" font-family="Inter,system-ui,sans-serif"
+        font-size="22" fill="#c8b19c">Replace this placeholder with your production hero image</text>
+  <!-- Dimensions label -->
+  <rect x="20" y="444" width="1400" height="26" rx="5" fill="#c8973f" opacity="0.10"/>
+  <text x="720" y="461" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="12" fill="#8a6e52">PLACEHOLDER — 1440 × 480 px — export as PNG to static/banner.png</text>
+</svg>

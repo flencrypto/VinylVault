@@ -1,0 +1,17 @@
+<!-- VinylFort Light-Mode Logo placeholder — 192 × 192 px
+     Optimised for light/white backgrounds.
+     Replace this entire file with your production light logo SVG.
+     DEPLOYMENT: copy to static/icon-192-light.svg (create this path as needed) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="36" fill="#f5ede2"/>
+  <circle cx="96" cy="88" r="72" fill="#ffffff"/>
+  <circle cx="96" cy="88" r="72" fill="none" stroke="#e0d5c8" stroke-width="2"/>
+  <circle cx="96" cy="88" r="52" fill="none" stroke="#e0d5c8" stroke-width="1.5"/>
+  <circle cx="96" cy="88" r="28" fill="#c8973f" opacity="0.18"/>
+  <circle cx="96" cy="88" r="28" fill="none" stroke="#c8973f" stroke-width="1.5"/>
+  <circle cx="96" cy="88" r="5"  fill="#ffffff" stroke="#c8973f" stroke-width="1.5"/>
+  <text x="96" y="84" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="8" font-weight="700" fill="#c8973f">VF</text>
+  <text x="96" y="170" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
+        font-size="9" fill="#8a6e52">PLACEHOLDER</text>
+</svg>
