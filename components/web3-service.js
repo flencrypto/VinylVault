@@ -1,5 +1,5 @@
 /**
- * VinylFort Web3 Service
+ * VinylVault Web3 Service
  *
  * Handles EIP-1193 wallet connection (MetaMask / any injected provider),
  * network switching to Polygon, and on-chain NFT minting for the
@@ -8,11 +8,11 @@
  * Dependencies: ethers.js v6 (loaded via CDN before this script)
  *
  * Usage:
- *   const wallet = await VinylFortWeb3.connectWallet();
- *   const result = await VinylFortWeb3.mintRecordNFT(tokenId, metadata);
+ *   const wallet = await VinylVaultWeb3.connectWallet();
+ *   const result = await VinylVaultWeb3.mintRecordNFT(tokenId, metadata);
  *
  * Contract:
- *   Replace VINYLFORT_CONTRACT_ADDRESS with your deployed ERC-721 contract
+ *   Replace VINYLVAULT_CONTRACT_ADDRESS with your deployed ERC-721 contract
  *   address. The ABI below expects a `safeMint(address to, string memory uri)`
  *   function — a standard OpenZeppelin ERC-721URIStorage extension.
  *
@@ -32,7 +32,7 @@
  *
  * @type {string|null}
  */
-const VINYLFORT_CONTRACT_ADDRESS = null; // TODO: set after contract deployment
+const VINYLVAULT_CONTRACT_ADDRESS = null; // TODO: set after contract deployment
 
 /**
  * Supported networks. The service will prompt users to switch to one of these.
@@ -63,7 +63,7 @@ const DEFAULT_CHAIN_ID = 80002; // Amoy testnet — switch to 137 for mainnet
 /*  Minimal ERC-721 ABI (safeMint + read helpers)                      */
 /* ------------------------------------------------------------------ */
 
-const VINYLFORT_NFT_ABI = [
+const VINYLVAULT_NFT_ABI = [
   // Mint a new token. Must match your contract's mint function signature.
   "function safeMint(address to, string memory uri) external returns (uint256)",
   // Standard ERC-721 helpers
@@ -129,10 +129,10 @@ function _isSupportedNetwork(chainId) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Public API — VinylFortWeb3                                         */
+/*  Public API — VinylVaultWeb3                                         */
 /* ------------------------------------------------------------------ */
 
-const VinylFortWeb3 = {
+const VinylVaultWeb3 = {
   /** Returns true if a wallet is already connected. */
   isConnected() {
     return Boolean(_state.account);
@@ -272,18 +272,20 @@ const VinylFortWeb3 = {
    *
    * Requires:
    *  - Wallet connected (calls connectWallet() automatically if not)
-   *  - VINYLFORT_CONTRACT_ADDRESS set (otherwise throws with clear message)
+   *  - VINYLVAULT_CONTRACT_ADDRESS set (otherwise throws with clear message)
    *
    * @param {string} tokenId   - Off-chain token ID (e.g. "VX-A1B2-C3D4"), used as part of metadata URI
    * @param {object} metadata  - Record metadata { artist, title, year, catno, condition }
    * @returns {Promise<{txHash: string, tokenId: string, explorerUrl: string}>}
    */
   async mintRecordNFT(tokenId, metadata) {
-    if (!VINYLFORT_CONTRACT_ADDRESS) {
-      throw new Error(
+    if (!VINYLVAULT_CONTRACT_ADDRESS) {
+      const err = new Error(
         "On-chain minting is not yet configured. " +
-        "Set VINYLFORT_CONTRACT_ADDRESS in components/web3-service.js after deploying your contract."
+        "Set VINYLVAULT_CONTRACT_ADDRESS in components/web3-service.js after deploying your contract."
       );
+      err.code = "CONTRACT_NOT_CONFIGURED";
+      throw err;
     }
 
     if (!_isEthersAvailable()) {
@@ -302,7 +304,7 @@ const VinylFortWeb3 = {
     // Build token URI (a JSON data URI with the record metadata)
     const tokenURIData = {
       name: `${metadata.artist || "Unknown"} — ${metadata.title || "Unknown"}`,
-      description: `VinylFort authenticity certificate for this vinyl record.`,
+      description: `VinylVault authenticity certificate for this vinyl record.`,
       attributes: [
         { trait_type: "Artist",    value: metadata.artist    || "" },
         { trait_type: "Title",     value: metadata.title     || "" },
@@ -311,14 +313,14 @@ const VinylFortWeb3 = {
         { trait_type: "Condition", value: metadata.condition || "" },
         { trait_type: "Token ID",  value: tokenId },
       ],
-      external_url: "https://vinylfort.app",
+      external_url: "https://vinylvault.app",
     };
     const tokenURI = "data:application/json;base64," +
       btoa(unescape(encodeURIComponent(JSON.stringify(tokenURIData))));
 
     const contract = new window.ethers.Contract(
-      VINYLFORT_CONTRACT_ADDRESS,
-      VINYLFORT_NFT_ABI,
+      VINYLVAULT_CONTRACT_ADDRESS,
+      VINYLVAULT_NFT_ABI,
       _state.signer
     );
 
@@ -364,4 +366,4 @@ const VinylFortWeb3 = {
 };
 
 // Make available globally (matches the pattern used by other components)
-window.VinylFortWeb3 = VinylFortWeb3;
+window.VinylVaultWeb3 = VinylVaultWeb3;

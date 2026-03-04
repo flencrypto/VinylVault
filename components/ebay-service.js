@@ -236,7 +236,7 @@ class EbayService {
    * Place a Buy-It-Now (fixed-price) purchase order.
    *
    * eBay's Buy Order API requires a fully-specified shipping address
-   * and a payment method.  VinylFort stores these in localStorage
+   * and a payment method.  VinylVault stores these in localStorage
    * under "ebay_shipping_address" and "ebay_payment_method_id".
    *
    * @param {string} itemId        – eBay item ID

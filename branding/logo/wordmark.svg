@@ -1,4 +1,4 @@
-<!-- VinylFort Wordmark placeholder — 1200 × 300 px
+<!-- VinylVault Wordmark placeholder — 1200 × 300 px
      Horizontal layout: icon + brand name side by side.
      Replace this entire file with your production wordmark SVG.
      DEPLOYMENT: copy to static/wordmark.svg -->
@@ -15,7 +15,7 @@
   <text x="300" y="130" font-family="'Cormorant Garamond',Georgia,serif"
         font-size="96" font-weight="700" fill="#f5ede2">Vinyl</text>
   <text x="300" y="230" font-family="'Cormorant Garamond',Georgia,serif"
-        font-size="96" font-weight="700" fill="#c8973f">Fort</text>
+        font-size="96" font-weight="700" fill="#c8973f">Vault</text>
   <!-- Placeholder label -->
   <rect x="20" y="265" width="1160" height="26" rx="5" fill="#c8973f" opacity="0.10"/>
   <text x="600" y="282" text-anchor="middle" font-family="Inter,system-ui,sans-serif"

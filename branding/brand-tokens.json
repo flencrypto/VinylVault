@@ -1,8 +1,8 @@
 {
   "meta": {
-    "brand": "VinylFort",
+    "brand": "VinylVault",
     "version": "1.0.0",
-    "description": "Design tokens for VinylFort — copy these values into style.css :root or your design tool."
+    "description": "Design tokens for VinylVault — copy these values into style.css :root or your design tool."
   },
   "color": {
     "surface":        { "value": "#0e0c0b", "usage": "Page / app background" },

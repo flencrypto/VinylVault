@@ -5,7 +5,7 @@ class DiscogsService {
     this.secret = localStorage.getItem("discogs_secret");
     this.baseUrl = "https://api.discogs.com";
     this.userAgent =
-      "VinylVaultPro/1.0 +https://github.com/flencrypto/VinylFort";
+      "VinylVaultPro/1.0 +https://github.com/flencrypto/VinylVault";
     this.rateLimit = {
       limit: 60,
       remaining: 60,

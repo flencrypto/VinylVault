@@ -1,7 +1,7 @@
-# VinylFort Branding Assets
+# VinylVault Branding Assets
 
 This directory is the single source of truth for every visual asset used by the
-VinylFort web app and Progressive Web App (PWA). Replace each placeholder with
+VinylVault web app and Progressive Web App (PWA). Replace each placeholder with
 your own production artwork, then copy/deploy to the locations listed below.
 
 ---

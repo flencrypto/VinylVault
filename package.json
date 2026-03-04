@@ -1,8 +1,8 @@
 {
-  "name": "vinylfort",
+  "name": "vinylvault",
   "version": "1.0.0",
   "private": true,
-  "description": "VinylFort front-end application tooling",
+  "description": "VinylVault front-end application tooling",
   "scripts": {
     "lint": "eslint . --ext .js,.mjs,.cjs --max-warnings=0",
     "typecheck": "tsc --noEmit",

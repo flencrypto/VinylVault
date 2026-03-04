@@ -1,4 +1,4 @@
-<!-- VinylFort Open Graph / Social Share Image placeholder — 1200 × 630 px
+<!-- VinylVault Open Graph / Social Share Image placeholder — 1200 × 630 px
      Displayed when users share the app URL on social networks (Twitter/X, Facebook, iMessage, etc.).
      Replace with your production OG image SVG or export as PNG.
      DEPLOYMENT: export to static/og-image.png and add:
@@ -31,7 +31,7 @@
         font-size="28" font-weight="800" fill="#c8973f">VF</text>
   <!-- Text content -->
   <text x="80" y="260" font-family="'Cormorant Garamond',Georgia,serif"
-        font-size="80" font-weight="700" fill="#f5ede2">VinylFort</text>
+        font-size="80" font-weight="700" fill="#f5ede2">VinylVault</text>
   <text x="80" y="340" font-family="Inter,system-ui,sans-serif"
         font-size="28" fill="#c8b19c">Professional vinyl valuation &amp; marketplace</text>
   <text x="80" y="390" font-family="Inter,system-ui,sans-serif"

@@ -14,7 +14,7 @@ pub struct RecordCertificate {
     /// SPL token mint address for this NFT.
     pub mint: Pubkey, // 32
 
-    /// VinylFort off-chain token identifier (e.g. "VX-A1B2-C3D4").
+    /// VinylVault off-chain token identifier (e.g. "VX-A1B2-C3D4").
     #[max_len(32)]
     pub token_id: String, // 4 + 32
 

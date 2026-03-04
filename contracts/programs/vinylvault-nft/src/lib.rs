@@ -11,12 +11,12 @@ use instructions::*;
 //   anchor build           (embeds the key from target/deploy/ into the binary)
 // Then update:
 //   - Anchor.toml   [programs.*] section
-//   - contracts/idl/vinylfort_nft.json  "address" field
-//   - components/web3-service.js  VINYLFORT_PROGRAM_ID constant
+//   - contracts/idl/vinylvault_nft.json  "address" field
+//   - components/web3-service.js  VINYLVAULT_PROGRAM_ID constant
 declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
-pub mod vinylfort_nft {
+pub mod vinylvault_nft {
     use super::*;
 
     /// Mint a new vinyl-record NFT certificate on-chain.

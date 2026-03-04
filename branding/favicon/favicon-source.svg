@@ -1,4 +1,4 @@
-<!-- VinylFort Favicon Source — scalable SVG
+<!-- VinylVault Favicon Source — scalable SVG
      Use this as the source for all ICO / PNG favicon exports.
      See branding/favicon/README.md for export instructions.
      DEPLOYMENT: copy to static/favicon.svg
@@ -21,5 +21,5 @@
   <text x="256" y="246" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
         font-size="30" font-weight="800" fill="#c8973f">VF</text>
   <text x="256" y="282" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
-        font-size="14" fill="#e8c06a" letter-spacing="4">FORT</text>
+        font-size="14" fill="#e8c06a" letter-spacing="4">VAULT</text>
 </svg>

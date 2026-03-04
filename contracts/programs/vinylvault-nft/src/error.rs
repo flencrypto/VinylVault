@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 #[error_code]
-pub enum VinylFortError {
+pub enum VinylVaultError {
     /// A string argument exceeds its maximum allowed byte length.
     #[msg("String field exceeds maximum length")]
     StringTooLong,

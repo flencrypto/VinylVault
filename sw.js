@@ -1,5 +1,5 @@
 /**
- * VinylFort Service Worker
+ * VinylVault Service Worker
  * Enables offline support and satisfies the Android PWA install criteria.
  *
  * Strategy:
@@ -7,7 +7,7 @@
  *   - API/third-party requests → Network-first with cache fallback
  */
 
-const CACHE_VERSION = 'vinylfort-v1';
+const CACHE_VERSION = 'vinylvault-v1';
 
 /** App-shell assets to pre-cache on install */
 const PRECACHE_URLS = [
@@ -131,7 +131,7 @@ async function cacheFirst(request) {
   } catch {
     // Return a minimal offline page if available
     const fallback = await caches.match('/index.html');
-    return fallback || new Response('Offline – VinylFort', { status: 503 });
+    return fallback || new Response('Offline – VinylVault', { status: 503 });
   }
 }
 

@@ -1,12 +1,12 @@
 [package]
-name = "vinylfort-nft"
+name = "vinylvault-nft"
 version = "0.1.0"
-description = "VinylFort on-chain record authentication and NFT minting program"
+description = "VinylVault on-chain record authentication and NFT minting program"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "vinylfort_nft"
+name = "vinylvault_nft"
 
 [features]
 no-entrypoint = []

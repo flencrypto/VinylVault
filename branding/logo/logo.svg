@@ -1,4 +1,4 @@
-<!-- VinylFort Primary Logo placeholder — 512 × 512 px
+<!-- VinylVault Primary Logo placeholder — 512 × 512 px
      Replace this entire file with your production logo SVG.
      DEPLOYMENT: copy to static/icon-512.svg -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
@@ -18,7 +18,7 @@
   <text x="256" y="248" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
         font-size="22" font-weight="700" fill="#c8973f">VINYL</text>
   <text x="256" y="272" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
-        font-size="22" font-weight="700" fill="#e8c06a">FORT</text>
+        font-size="22" font-weight="700" fill="#e8c06a">VAULT</text>
   <!-- Placeholder label -->
   <rect x="20" y="460" width="472" height="32" rx="6" fill="#c8973f" opacity="0.12"/>
   <text x="256" y="481" text-anchor="middle" font-family="Inter,system-ui,sans-serif"

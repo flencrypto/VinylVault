@@ -344,7 +344,7 @@ function showBlockchainAuthModal() {
   const uncertifiedCount = totalRecords - certifiedCount;
 
   // --- Wallet state snapshot for rendering ---
-  const w3 = typeof VinylFortWeb3 !== "undefined" ? VinylFortWeb3 : null;
+  const w3 = typeof VinylVaultWeb3 !== "undefined" ? VinylVaultWeb3 : null;
   const walletAvailable = w3 ? w3.isWalletAvailable() : false;
   const walletConnected = w3 ? w3.isConnected() : false;
   const walletAddress  = walletConnected ? w3.getShortAddress() : null;
@@ -585,7 +585,7 @@ function showBlockchainAuthModal() {
     } catch (err) {
       // User rejected or contract not configured — offer local fallback
       const msg = err && err.message ? err.message : String(err);
-      const isContractNotSet = msg.includes("VINYLFORT_CONTRACT_ADDRESS") || msg.includes("not yet configured");
+      const isContractNotSet = err && err.code === "CONTRACT_NOT_CONFIGURED";
       if (isContractNotSet) {
         // Silent local fallback when contract is not deployed yet
         mintRecordLocal(tokenId);

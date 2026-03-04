@@ -1,4 +1,4 @@
-<!-- VinylFort PWA Splash Screen placeholder — 1242 × 2208 px (iPhone 14 Pro Max)
+<!-- VinylVault PWA Splash Screen placeholder — 1242 × 2208 px (iPhone 14 Pro Max)
      Shown by iOS and Android while the PWA is loading.
      Replace with your production splash screen SVG or export as PNG.
      DEPLOYMENT: export PNGs at each required size and reference in manifest.json:
@@ -28,10 +28,10 @@
   <text x="621" y="934" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
         font-size="32" font-weight="700" fill="#c8973f">VINYL</text>
   <text x="621" y="972" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
-        font-size="32" font-weight="700" fill="#e8c06a">FORT</text>
+        font-size="32" font-weight="700" fill="#e8c06a">VAULT</text>
   <!-- Tagline -->
   <text x="621" y="1480" text-anchor="middle" font-family="'Cormorant Garamond',Georgia,serif"
-        font-size="64" font-weight="700" fill="#f5ede2">VinylFort</text>
+        font-size="64" font-weight="700" fill="#f5ede2">VinylVault</text>
   <text x="621" y="1554" text-anchor="middle" font-family="Inter,system-ui,sans-serif"
         font-size="30" fill="#c8b19c">Vinyl valuation &amp; marketplace</text>
   <!-- Placeholder label -->

@@ -69,11 +69,11 @@ export type ListingPreviewsCreationTask = {
 };
 
 // ---------------------------------------------------------------------------
-// Internal record type (VinylFort)
+// Internal record type (VinylVault)
 // ---------------------------------------------------------------------------
 
-/** Internal record shape produced by VinylFort's OCR / listing flow. */
-export type VinylFortRecord = {
+/** Internal record shape produced by VinylVault's OCR / listing flow. */
+export type VinylVaultRecord = {
   sku?: string;
   artist?: string;
   title?: string;
@@ -95,11 +95,11 @@ export type VinylFortRecord = {
 // ---------------------------------------------------------------------------
 
 /**
- * Convert a VinylFort internal record into an `ExternalProductDetailsInput`
+ * Convert a VinylVault internal record into an `ExternalProductDetailsInput`
  * suitable for the eBay Inventory Mapping API.
  */
 export function toExternalProduct(
-  record: VinylFortRecord,
+  record: VinylVaultRecord,
   sku: string,
 ): ExternalProductDetailsInput {
   const aspects: ExternalProductAspect[] = [];
