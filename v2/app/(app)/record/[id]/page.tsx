@@ -1,9 +1,15 @@
 import RecordDetailClient from "@/components/record/record-detail-client"
 
-export default function RecordDetailPage({ params }: { params: { id: string } }) {
+export default async function RecordDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
   // MVP: mock record. Replace with DB fetch.
   const record = {
-    id: params.id,
+    id,
     artist: "Radiohead",
     title: "OK Computer",
     label: "Parlophone",
