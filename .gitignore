@@ -4,3 +4,9 @@ dist/
 .env
 .env.local
 .env.*.local
+
+# v2 Next.js build artifacts
+v2/.next/
+v2/node_modules/
+v2/.env
+v2/.env.local
