@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vv-bg: #0B0F14;
+  --vv-panel: #111826;
+  --vv-card: #1F2A3A;
+  --vv-text: #E7EEF8;
+
+  --vv-border: rgba(255, 255, 255, 0.06);
+  --vv-divider: rgba(255, 255, 255, 0.08);
+
+  --vv-cyan: #2DE2E6;
+  --vv-violet: #7B5CFF;
+
+  --vv-success: #35D07F;
+  --vv-warning: #FFB020;
+  --vv-danger: #FF4D4D;
+
+  --vv-radius: 12px;
+
+  /* shadcn/ui base vars (dark defaults) */
+  --background: 214 30% 8%;
+  --foreground: 215 40% 95%;
+  --card: 214 28% 16%;
+  --card-foreground: 215 40% 95%;
+  --popover: 214 28% 16%;
+  --popover-foreground: 215 40% 95%;
+  --primary: 181 80% 54%;
+  --primary-foreground: 214 30% 8%;
+  --secondary: 214 25% 22%;
+  --secondary-foreground: 215 40% 95%;
+  --muted: 214 25% 18%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 214 25% 22%;
+  --accent-foreground: 215 40% 95%;
+  --destructive: 0 80% 60%;
+  --destructive-foreground: 215 40% 95%;
+  --border: 214 20% 16%;
+  --input: 214 25% 18%;
+  --ring: 181 80% 54%;
+  --radius: var(--vv-radius);
+}
+
+body {
+  color: var(--vv-text);
+  background: var(--vv-bg);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
