@@ -38,14 +38,19 @@ export function AddGatedCards({ openaiIntegration, openaiStatus }: Props) {
     <div className="grid gap-4 sm:grid-cols-3">
       {CARDS.map((card) => {
         const cardInner = (
-          <Card className="bg-vv-panel border-vv-border p-4 hover:bg-vv-card transition-colors cursor-pointer relative">
-            <div className="text-2xl mb-2">{card.icon}</div>
-            <div className="font-semibold">{card.title}</div>
-            <div className="text-sm text-vv-text/65 mt-1">{card.desc}</div>
-            {card.requiresAI && !openaiStatus.configured && (
-              <div className="mt-2 text-xs text-vv-warning/80">Requires AI setup</div>
-            )}
-          </Card>
+          <button
+            type="button"
+            className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-vv-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-vv-panel rounded-vv"
+          >
+            <Card className="bg-vv-panel border-vv-border p-4 hover:bg-vv-card transition-colors relative">
+              <div className="text-2xl mb-2">{card.icon}</div>
+              <div className="font-semibold">{card.title}</div>
+              <div className="text-sm text-vv-text/65 mt-1">{card.desc}</div>
+              {card.requiresAI && !openaiStatus.configured && (
+                <div className="mt-2 text-xs text-vv-warning/80">Requires AI setup</div>
+              )}
+            </Card>
+          </button>
         )
 
         if (card.requiresAI) {

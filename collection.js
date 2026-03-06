@@ -1048,7 +1048,7 @@ function getFilteredCollection() {
   filtered.sort((a, b) => {
     switch (sortBy) {
       case "artist":
-        return a.record.artist.localeCompare(b.record.artist);
+        return a.artistLower.localeCompare(b.artistLower);
       case "purchasePrice":
         return (b.record.purchasePrice || 0) - (a.record.purchasePrice || 0);
       case "estValue":
