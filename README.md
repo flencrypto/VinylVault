@@ -76,16 +76,16 @@ Chrome, Edge, and Brave all share the same installation flow on every desktop OS
 
 > **Tip:** You can also re-open it from your OS's application launcher or start menu just like any other app.
 
-#### macOS: Safari (Sonoma 14 or later)
+#### macOS: Safari (macOS Sonoma (14) or later)
 
-Safari on macOS 14+ supports installing web apps directly to the Dock.
+Safari on macOS Sonoma (14) or later supports installing web apps directly to the Dock.
 
 1. Open the VinylVault URL in **Safari**.
-2. In the menu bar click **File** → **Add to Dock…** (macOS Sonoma 14+).
+2. In the menu bar click **File** → **Add to Dock…** (macOS Sonoma (14) or later).
 3. Edit the name if you wish, then click **"Add"**.
 4. VinylVault appears in your Dock and runs as a standalone app.
 
-> **Note:** The "Add to Dock" option requires **macOS 14 Sonoma or later**. On older macOS versions use Chrome or Edge instead.
+> **Note:** The "Add to Dock" option requires **macOS Sonoma (14) or later**. On older macOS versions use Chrome or Edge instead.
 
 #### Windows / macOS / Linux: Firefox
 
@@ -99,7 +99,7 @@ A signed release APK is available for Android devices if you prefer a native ins
 
 **Install the pre-built APK:**
 
-1. Download `releases/VinylVault-1.0.0-release.apk` from this repository.
+1. Download the latest signed APK from the [Releases](releases/latest) page of this repository.
 2. On your Android device go to **Settings → Security → Install unknown apps** and enable it for your file manager.
 3. Open the downloaded `.apk` file and tap **Install**.
 4. VinylVault will appear on your home screen.
