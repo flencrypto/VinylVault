@@ -115,14 +115,14 @@ export const INTEGRATIONS: IntegrationRequirement[] = [
     name: "xAI (Grok) — AI Fact-Checker",
     description:
       "Uses xAI's Grok model alongside OpenAI to cross-validate valuations and pressing identifications. Both AIs work as a team: OpenAI leads, Grok fact-checks.",
-    requiredEnvVars: ["XAI_API_KEY"],
+    requiredEnvVars: ["XAI_API_KEY", "OPENAI_API_KEY"],
     optionalEnvVars: [],
     whereToGet: [
       "1. Sign in to console.x.ai (https://console.x.ai)",
       "2. Navigate to API Keys",
       "3. Click 'Create API key'",
       "4. Copy the key and add XAI_API_KEY=xai-... to v2/.env.local",
-      "   NOTE: For best results, also set OPENAI_API_KEY — xAI is designed to supplement OpenAI, not replace it.",
+      "   NOTE: OPENAI_API_KEY must also be set — xAI supplements OpenAI, it does not replace it.",
     ],
     officialLinks: [
       "https://console.x.ai",
