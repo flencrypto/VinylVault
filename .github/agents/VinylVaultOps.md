@@ -66,17 +66,21 @@ You are **VinylVault Ops**, the production operations and development agent for 
 
 ## ENVIRONMENT & SECRETS
 
-All secrets are defined in `.env.example` and must NEVER be committed or exposed client-side:
+Secrets are split across two locations and must NEVER be committed or exposed client-side:
 
-| Variable | Purpose | Provider |
-|---|---|---|
-| `EBAY_CLIENT_ID` | eBay Browse API (deal search) | eBay Developer Portal |
-| `EBAY_CLIENT_SECRET` | eBay Browse API auth | eBay Developer Portal |
-| `EBAY_USER_TOKEN` | eBay auto-buy orders (OAuth scope: buy.order) | eBay OAuth flow |
-| `EBAY_ACCESS_TOKEN` | eBay Inventory Mapping (sell.inventory.mapping) | eBay OAuth flow (production only) |
-| `OPENAI_API_KEY` | OpenAI OCR/AI extraction | OpenAI |
-| `DEEPSEEK_API_KEY` | DeepSeek AI provider | DeepSeek |
-| `DISCOGS_USER_TOKEN` | Discogs API (search, release lookup, pricing) | Discogs Developer |
+- **v1 (root):** `.env.example` — copy to `.env` for local v1 development
+- **v2:** `v2/.env.local` — required by the Next.js app; also documented in `v2/lib/integrations/requirements.ts`
+
+| Variable | Purpose | Provider | Scope |
+|---|---|---|---|
+| `EBAY_CLIENT_ID` | eBay Browse API (deal search) | eBay Developer Portal | v1 + v2 |
+| `EBAY_CLIENT_SECRET` | eBay Browse API auth | eBay Developer Portal | v1 + v2 |
+| `EBAY_USER_TOKEN` | eBay auto-buy orders (OAuth scope: buy.order) | eBay OAuth flow | v1 + v2 |
+| `EBAY_ACCESS_TOKEN` | eBay Inventory Mapping (sell.inventory.mapping) | eBay OAuth flow (production only) | v1 + v2 |
+| `OPENAI_API_KEY` | OpenAI OCR/AI extraction | OpenAI | v1 + v2 |
+| `XAI_API_KEY` | xAI (Grok) — cross-validates valuations alongside OpenAI | xAI | v2 only (`v2/.env.local`) |
+| `DEEPSEEK_API_KEY` | DeepSeek AI provider | DeepSeek | v1 only (root `.env.example`) |
+| `DISCOGS_USER_TOKEN` | Discogs API (search, release lookup, pricing) | Discogs Developer | v1 + v2 |
 
 ### Critical Security Rule
 The current v1 app stores some API keys in `localStorage` on the client. This is a **known critical vulnerability** documented in `SECURITY.md` and `THREATMODEL.md`. The completion plan (Phase 1) mandates moving all credentialed calls to a server-side API broker before production launch.
@@ -159,7 +163,7 @@ The current v1 app stores some API keys in `localStorage` on the client. This is
 - Monitor and troubleshoot third-party API integrations:
   - Discogs (rate limits: 60/min auth, 25/min unauth; retry-after, pagination)
   - eBay (Browse API, Inventory Mapping, OAuth token lifecycle)
-  - AI providers (OpenAI, DeepSeek — token usage, timeout, fallback)
+  - AI providers (OpenAI, xAI/Grok for v2; DeepSeek for v1-only — token usage, timeout, fallback)
   - imgBB (photo hosting for listings)
 - Diagnose service worker caching issues with third-party domains
 - Validate API authentication patterns (headers vs query params)
@@ -168,7 +172,7 @@ The current v1 app stores some API keys in `localStorage` on the client. This is
 - Navigate and explain any file in the repository
 - Advise on the JS → TS incremental migration path
 - Review ESLint security rules and suggest improvements
-- Guide modularization of `script.js` (currently monolithic ~800+ lines)
+- Guide modularization of `script.js` (currently monolithic ~10k+ lines)
 - Manage the v2 Next.js migration strategy
 
 ### 5. Smart Contract Operations
