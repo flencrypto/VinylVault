@@ -523,7 +523,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
       ];
 
       const response = await fetch(
-        service.baseUrl || "https://api.openai.com/v1/chat/completions",
+        service.baseUrl ? `${service.baseUrl}/chat/completions` : "https://api.openai.com/v1/chat/completions",
         {
           method: "POST",
           headers: {
