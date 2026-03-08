@@ -494,7 +494,8 @@
 
       // ─── Build page ───────────────────────────────────────────────────
       function buildConditionBadge(grade) {
-        return `<span class="label-chip ${conditionClass(grade)}">${grade || "—"}</span>`;
+        const safeGrade = grade ? escHtml(String(grade)) : "—";
+        return `<span class="label-chip ${conditionClass(grade)}">${safeGrade}</span>`;
       }
 
       function buildPage(record, idx) {
@@ -504,7 +505,8 @@
         // Set hero bg
         const firstPhotoSrc = _photos[0]?.url || _photos[0];
         if (firstPhotoSrc) {
-          document.getElementById("heroBg").style.backgroundImage = `url(${firstPhotoSrc})`;
+          const safeFirstPhotoSrc = String(firstPhotoSrc).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+          document.getElementById("heroBg").style.backgroundImage = `url('${safeFirstPhotoSrc}')`;
           // Replace default disc with photo using safe DOM creation
           const disc = document.getElementById("heroDisc");
           const img = document.createElement("img");
@@ -592,7 +594,7 @@
           document.getElementById("galleryGrid").innerHTML = _photos.map((p, i) => {
             const src = p?.url || p;
             return `<div class="aspect-square rounded-xl overflow-hidden bg-surface-mid border border-gray-800 gallery-thumb" onclick="openPhoto(${i})">
-              <img src="${src}" alt="Photo ${i+1}" class="w-full h-full object-cover" loading="lazy">
+              <img src="${escHtml(String(src))}" alt="Photo ${i+1}" class="w-full h-full object-cover" loading="lazy">
             </div>`;
           }).join("");
         }
@@ -708,23 +710,32 @@
         const md = record.marketData;
         if (md && Array.isArray(md.lastSold) && md.lastSold.length) {
           document.getElementById("marketSection").classList.remove("hidden");
-          const srcLabel = {
+          const srcLabelRaw = {
             ebay_google:   "eBay Sold (via Google)",
             discogs:       "Discogs Price Guide",
             csv_import:    "CSV Import",
           }[md.source] || "Market Data";
+          const srcLabel = escHtml(srcLabelRaw);
 
           let mHtml = `<p class="text-xs text-gray-500 mb-3">${srcLabel}`;
-          if (md.confidence) mHtml += ` · <span class="${md.confidence === "high" ? "text-green-400" : "text-yellow-400"}">${md.confidence} confidence</span>`;
+          if (md.confidence) {
+            const confClass = md.confidence === "high" ? "text-green-400" : "text-yellow-400";
+            mHtml += ` · <span class="${confClass}">${escHtml(md.confidence)} confidence</span>`;
+          }
           mHtml += `</p><div class="space-y-0">`;
           mHtml += md.lastSold.map(s => {
             const priceStr = `£${parseFloat(s.price).toFixed(2)}`;
-            const meta = [s.condition, s.date].filter(Boolean).join(" · ");
-            const row = `<div class="sale-row flex justify-between items-center py-2 text-sm">
+            const meta = [
+              s.condition ? escHtml(s.condition) : "",
+              s.date ? escHtml(s.date) : "",
+            ].filter(Boolean).join(" · ");
+            const linkHtml = s.url
+              ? `<a href="${escHtml(String(s.url))}" target="_blank" rel="noopener noreferrer" class="hover:underline">${priceStr}</a>`
+              : priceStr;
+            return `<div class="sale-row flex justify-between items-center py-2 text-sm">
               <span class="text-gray-400">${meta || "Sold"}</span>
-              <span class="font-medium ${s.url ? "text-primary" : "text-gray-200"}">${s.url ? `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="hover:underline">${priceStr}</a>` : priceStr}</span>
+              <span class="font-medium ${s.url ? "text-primary" : "text-gray-200"}">${linkHtml}</span>
             </div>`;
-            return row;
           }).join("");
           mHtml += `</div>`;
           if (md.medianPrice) {
@@ -750,8 +761,8 @@
         if (record.ebayStrategy) {
           document.getElementById("strategySection").classList.remove("hidden");
           document.getElementById("strategyContent").innerHTML = typeof record.ebayStrategy === "string"
-            ? record.ebayStrategy.replace(/\n/g, "<br>")
-            : JSON.stringify(record.ebayStrategy, null, 2).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
+            ? escHtml(record.ebayStrategy).replace(/\n/g, "<br>")
+            : escHtml(JSON.stringify(record.ebayStrategy, null, 2)).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
         }
 
         // ── External Links ────────────────────────────────────────────

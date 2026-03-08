@@ -580,7 +580,7 @@ Return ONLY this JSON (no other text):
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: provider === "xai" ? "grok-2-vision-1212" : "gpt-4o-mini",
+          model: provider === "xai" ? "grok-2-1212" : "gpt-4o-mini",
           messages: [
             {
               role: "system",
