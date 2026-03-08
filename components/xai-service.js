@@ -1,13 +1,15 @@
 class XAIService {
   constructor() {
     this.apiKey = localStorage.getItem("xai_api_key");
-    this.model = localStorage.getItem("xai_model") || "grok-2-vision-1212";
+    this.model = localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
     this.baseUrl = "https://api.x.ai/v1";
   }
 
   isVisionModel(modelName) {
     if (!modelName) return false;
-    return modelName.toLowerCase().includes("vision");
+    const name = modelName.toLowerCase();
+    // grok-4 family and legacy grok-2-vision models support image inputs
+    return name.startsWith("grok-4") || name.includes("vision");
   }
 
   async parseError(response, fallbackMessage) {
@@ -44,7 +46,7 @@ class XAIService {
 
     if (!this.isVisionModel(this.model)) {
       throw new Error(
-        `Selected xAI model does not support image analysis. Please choose a vision-capable model (e.g. grok-2-vision-1212) in Settings.`,
+        `Selected xAI model does not support image analysis. Please choose a vision-capable model (e.g. grok-4-1-fast-reasoning) in Settings.`,
       );
     }
 
