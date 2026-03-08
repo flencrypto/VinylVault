@@ -1014,3 +1014,156 @@ button,
 html {
   scroll-behavior: smooth;
 }
+
+/* ─── Futuristic UI Enhancements ─────────────────────────────────────────── */
+
+/* Animated gradient border utility */
+.gradient-border {
+  position: relative;
+  border-radius: var(--vf-radius-lg);
+  isolation: isolate;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #c8973f 0%, #e8c06a 35%, #8a6e52 65%, #c8973f 100%);
+  background-size: 300% 300%;
+  animation: gradientShift 8s linear infinite;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gradient-border:hover::before {
+  opacity: 0.5;
+}
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Glow pulse on primary cards */
+.glow-card {
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+}
+.glow-card:hover {
+  box-shadow: 0 0 0 1px rgba(200,151,63,0.25), 0 8px 40px rgba(200,151,63,0.15);
+  transform: translateY(-1px);
+}
+
+/* Hero gradient text */
+.hero-text {
+  background: linear-gradient(135deg, #f5ede2 0%, #c8973f 40%, #e8c06a 70%, #f5ede2 100%);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: heroTextShift 10s ease infinite;
+}
+@keyframes heroTextShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* Stat card with glow bottom border */
+.stat-glow {
+  border-bottom: 2px solid transparent;
+  background-clip: padding-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.stat-glow:hover {
+  border-bottom-color: #c8973f;
+  box-shadow: 0 4px 24px rgba(200,151,63,0.12), inset 0 -1px 0 #c8973f;
+}
+
+/* Glass effect panel */
+.glass-panel {
+  background: rgba(26, 22, 19, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200,151,63,0.15);
+}
+
+/* Scanning line animation for AI processing states */
+@keyframes scanDown {
+  0%   { transform: translateY(-100%); opacity: 0.4; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #c8973f, transparent);
+  animation: scanDown 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Futuristic data table rows */
+.data-row {
+  border-bottom: 1px solid rgba(46,41,36,0.5);
+  transition: background 0.15s ease;
+}
+.data-row:hover {
+  background: rgba(200,151,63,0.04);
+}
+
+/* Neon accent chip */
+.neon-chip {
+  border: 1px solid rgba(200,151,63,0.4);
+  background: rgba(200,151,63,0.08);
+  color: #e8c06a;
+  box-shadow: 0 0 8px rgba(200,151,63,0.15);
+}
+
+/* Section header accent line */
+.section-header-accent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.section-header-accent::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, rgba(200,151,63,0.3), transparent);
+}
+
+/* Floating action button */
+.fab {
+  position: fixed;
+  bottom: 5rem;
+  right: 1.5rem;
+  z-index: 40;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #c8973f, #e8c06a);
+  color: #0e0c0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(200,151,63,0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+.fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(200,151,63,0.55);
+}
+
+/* Progress / loading bar */
+.progress-bar {
+  height: 2px;
+  background: linear-gradient(to right, #c8973f, #e8c06a, #c8973f);
+  background-size: 200% 100%;
+  animation: progressPulse 2s linear infinite;
+  border-radius: 9999px;
+}
+@keyframes progressPulse {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}

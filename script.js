@@ -303,13 +303,13 @@ async function addPhotos(files) {
   if (
     uploadedPhotos.length > 0 &&
     (localStorage.getItem("openai_api_key") ||
-      localStorage.getItem("deepseek_api_key"))
+      localStorage.getItem("xai_api_key"))
   ) {
     setTimeout(() => analyzePhotosWithOCR(), 500);
   } else if (
     uploadedPhotos.length > 0 &&
     !localStorage.getItem("openai_api_key") &&
-    !localStorage.getItem("deepseek_api_key")
+    !localStorage.getItem("xai_api_key")
   ) {
     showToast("Add AI API key in Settings for auto-detection", "warning");
   }
@@ -578,31 +578,31 @@ function fileToBase64Clean(file) {
 }
 function getAIService() {
   const provider = localStorage.getItem("ai_provider") || "openai";
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
-    return window.deepseekService;
+  if (provider === "xai" && window.xaiService?.isConfigured) {
+    return window.xaiService;
   }
   return window.ocrService;
 }
 
 function resolveOCRProvider() {
   const preferredProvider = localStorage.getItem("ai_provider") || "openai";
-  const deepseekModel =
-    localStorage.getItem("deepseek_model") || "deepseek-chat";
-  const canUseDeepseekVision =
-    preferredProvider === "deepseek" &&
-    window.deepseekService?.isConfigured &&
-    window.deepseekService.isVisionModel(deepseekModel);
+  const xaiModel =
+    localStorage.getItem("xai_model") || "grok-2-vision-1212";
+  const canUseXAIVision =
+    preferredProvider === "xai" &&
+    window.xaiService?.isConfigured &&
+    window.xaiService.isVisionModel(xaiModel);
 
-  if (canUseDeepseekVision) {
-    return { provider: "deepseek", fallbackReason: null };
+  if (canUseXAIVision) {
+    return { provider: "xai", fallbackReason: null };
   }
 
-  if (preferredProvider === "deepseek") {
+  if (preferredProvider === "xai") {
     return {
       provider: "openai",
-      fallbackReason: window.deepseekService?.isConfigured
-        ? `DeepSeek model \"${deepseekModel}\" does not support image analysis.`
-        : "DeepSeek API key not configured.",
+      fallbackReason: window.xaiService?.isConfigured
+        ? `xAI model "${xaiModel}" does not support image analysis. Please select "grok-2-vision-1212" in Settings.`
+        : "xAI API key not configured.",
     };
   }
 
@@ -677,7 +677,7 @@ async function analyzePhotosWithOCR() {
     // Determine which AI service to use
     const { provider, fallbackReason } = resolveOCRProvider();
     const service =
-      provider === "deepseek" ? window.deepseekService : window.ocrService;
+      provider === "xai" ? window.xaiService : window.ocrService;
 
     if (fallbackReason) {
       showToast(`${fallbackReason} Falling back to OpenAI for OCR.`, "warning");
@@ -689,11 +689,11 @@ async function analyzePhotosWithOCR() {
       if (!apiKey) throw new Error("OpenAI API key not configured");
       window.ocrService.updateApiKey(apiKey);
     } else {
-      const apiKey = localStorage.getItem("deepseek_api_key");
-      if (!apiKey) throw new Error("DeepSeek API key not configured");
-      window.deepseekService.updateApiKey(apiKey);
-      window.deepseekService.updateModel(
-        localStorage.getItem("deepseek_model") || "deepseek-chat",
+      const apiKey = localStorage.getItem("xai_api_key");
+      if (!apiKey) throw new Error("xAI API key not configured");
+      window.xaiService.updateApiKey(apiKey);
+      window.xaiService.updateModel(
+        localStorage.getItem("xai_model") || "grok-2-vision-1212",
       );
     }
 
@@ -762,7 +762,7 @@ async function analyzePhotosWithOCR() {
     ) {
       const provider = localStorage.getItem("ai_provider") || "openai";
       showToast(
-        `Please configure ${provider === "deepseek" ? "DeepSeek" : "OpenAI"} API key in Settings`,
+        `Please configure ${provider === "xai" ? "xAI" : "OpenAI"} API key in Settings`,
         "error",
       );
     } else {
@@ -1994,18 +1994,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -2015,13 +2015,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -2120,7 +2120,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -3435,18 +3435,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -3456,13 +3456,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -3561,7 +3561,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -4365,18 +4365,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -4386,13 +4386,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -4491,7 +4491,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -5404,18 +5404,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -5425,13 +5425,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -5530,7 +5530,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -6410,18 +6410,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -6431,13 +6431,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -6536,7 +6536,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -6778,7 +6778,7 @@ function populateFieldsFromCollection(record) {
     // Auto-trigger AI analysis on collection photos if an API key is available
     const hasApiKey =
       localStorage.getItem("openai_api_key") ||
-      localStorage.getItem("deepseek_api_key");
+      localStorage.getItem("xai_api_key");
     if (hasApiKey) {
       setTimeout(() => analyzeCollectionPhotosWithOCR(record.photos), 500); // Delay allows the page to settle before OCR starts
     } else {
@@ -6870,7 +6870,7 @@ async function analyzeCollectionPhotosWithOCR(photos) {
 
     const { provider, fallbackReason } = resolveOCRProvider();
     const service =
-      provider === "deepseek" ? window.deepseekService : window.ocrService;
+      provider === "xai" ? window.xaiService : window.ocrService;
 
     if (fallbackReason) {
       showToast(`${fallbackReason} Falling back to OpenAI for OCR.`, "warning");
@@ -6881,11 +6881,11 @@ async function analyzeCollectionPhotosWithOCR(photos) {
       if (!apiKey) throw new Error("OpenAI API key not configured");
       window.ocrService.updateApiKey(apiKey);
     } else {
-      const apiKey = localStorage.getItem("deepseek_api_key");
-      if (!apiKey) throw new Error("DeepSeek API key not configured");
-      window.deepseekService.updateApiKey(apiKey);
-      window.deepseekService.updateModel(
-        localStorage.getItem("deepseek_model") || "deepseek-chat",
+      const apiKey = localStorage.getItem("xai_api_key");
+      if (!apiKey) throw new Error("xAI API key not configured");
+      window.xaiService.updateApiKey(apiKey);
+      window.xaiService.updateModel(
+        localStorage.getItem("xai_model") || "grok-2-vision-1212",
       );
     }
 
@@ -6950,7 +6950,7 @@ async function analyzeCollectionPhotosWithOCR(photos) {
     ) {
       const provider = localStorage.getItem("ai_provider") || "openai";
       showToast(
-        `Please configure ${provider === "deepseek" ? "DeepSeek" : "OpenAI"} API key in Settings`,
+        `Please configure ${provider === "xai" ? "xAI" : "OpenAI"} API key in Settings`,
         "error",
       );
     } else {
@@ -7749,18 +7749,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -7770,13 +7770,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -7875,7 +7875,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -8796,18 +8796,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -8817,13 +8817,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -8922,7 +8922,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -9977,18 +9977,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -9998,13 +9998,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -10110,7 +10110,7 @@ async function generateListingWithAI() {
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 

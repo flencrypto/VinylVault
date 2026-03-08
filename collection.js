@@ -480,8 +480,8 @@ async function analyzeRecordForResale(record) {
   // Step 3: Use AI for qualitative analysis only (never for prices)
   const aiProvider = localStorage.getItem("ai_provider") || "openai";
   const hasAI =
-    aiProvider === "deepseek"
-      ? localStorage.getItem("deepseek_api_key")
+    aiProvider === "xai"
+      ? localStorage.getItem("xai_api_key")
       : localStorage.getItem("openai_api_key");
 
   if (hasAI) {
@@ -539,8 +539,8 @@ async function analyzeRecordForResale(record) {
 async function fetchAIMarketAnalysis(record, existingData) {
   const provider = localStorage.getItem("ai_provider") || "openai";
   const apiKey =
-    provider === "deepseek"
-      ? localStorage.getItem("deepseek_api_key")
+    provider === "xai"
+      ? localStorage.getItem("xai_api_key")
       : localStorage.getItem("openai_api_key");
 
   if (!apiKey) return null;
@@ -570,8 +570,8 @@ Return ONLY this JSON (no other text):
 
   try {
     const response = await fetch(
-      provider === "deepseek"
-        ? "https://api.deepseek.com/v1/chat/completions"
+      provider === "xai"
+        ? "https://api.x.ai/v1/chat/completions"
         : "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
@@ -580,7 +580,7 @@ Return ONLY this JSON (no other text):
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: provider === "deepseek" ? "deepseek-chat" : "gpt-4o-mini",
+          model: provider === "xai" ? "grok-2-1212" : "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -1006,6 +1006,9 @@ function renderCollection() {
                             <button onclick="viewRecordDetail(${originalIdx})" class="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-all" title="View Details">
                                 <i data-feather="eye" class="w-4 h-4"></i>
                             </button>
+                            <a href="vinyl.html?idx=${originalIdx}" class="p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all" title="Full Page Details">
+                                <i data-feather="maximize-2" class="w-4 h-4"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1238,6 +1241,9 @@ ${
             <button onclick="closeRecordModal()" class="text-gray-400 hover:text-white">
                 <i data-feather="x" class="w-6 h-6"></i>
             </button>
+            <a href="vinyl.html?idx=${index}" class="ml-2 text-gray-400 hover:text-primary" title="Open full page">
+                <i data-feather="maximize-2" class="w-5 h-5"></i>
+            </a>
         </div>
         <div class="p-6 overflow-y-auto max-h-[70vh]">
             <div class="grid md:grid-cols-2 gap-6">
@@ -1962,7 +1968,7 @@ async function runAILookupOnImages() {
     let detection = { artist: record.artist, title: record.title, catalogueNumber: record.catalogueNumber, year: record.year, label: record.label, confidence: "low" };
 
     // Try AI OCR if configured
-    const apiKey = localStorage.getItem("openai_api_key") || localStorage.getItem("deepseek_api_key");
+    const apiKey = localStorage.getItem("openai_api_key") || localStorage.getItem("xai_api_key");
     if (apiKey && typeof EnhancedOCRService !== "undefined") {
       try {
         const ocrService = new EnhancedOCRService();

@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VinylVault" />
+    <meta name="theme-color" content="#c8973f" />
+    <meta name="description" content="Vinyl record detail view — VinylVault Pro" />
+    <title>Record Detail – VinylVault Pro</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/static/icon-512.svg" />
+    <link rel="apple-touch-icon" href="/static/icon-192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              surface: "#0e0c0b",
+              "surface-light": "#1a1613",
+              "surface-mid": "#231e1b",
+              primary: "#c8973f",
+              secondary: "#8a6e52",
+              accent: "#e8c06a",
+              profit: "#4ade80",
+              loss: "#ef4444",
+              deal: "#c8a87a",
+            },
+            fontFamily: {
+              sans: ["Inter", "system-ui", "sans-serif"],
+              display: ["Cormorant Garamond", "serif"],
+            },
+          },
+        },
+      };
+    </script>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      :root {
+        --vf-surface: #0e0c0b;
+        --vf-surface-light: #1a1613;
+        --vf-border: #2e2924;
+        --vf-primary: #c8973f;
+        --vf-accent: #e8c06a;
+        --vf-text: #f5ede2;
+      }
+
+      /* Futuristic glow effects */
+      .glow-primary { box-shadow: 0 0 24px rgba(200,151,63,0.25); }
+      .glow-accent  { box-shadow: 0 0 32px rgba(232,192,106,0.18); }
+      .border-glow {
+        border-color: rgba(200,151,63,0.4);
+        box-shadow: 0 0 12px rgba(200,151,63,0.12);
+      }
+
+      /* Animated gradient border */
+      .grad-border {
+        position: relative;
+        border-radius: 1rem;
+        isolation: isolate;
+      }
+      .grad-border::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #c8973f 0%, #e8c06a 40%, #8a6e52 70%, #c8973f 100%);
+        background-size: 300% 300%;
+        animation: borderRotate 6s linear infinite;
+        z-index: -1;
+        opacity: 0.6;
+      }
+      @keyframes borderRotate {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
+      /* Scanline overlay for retro-futuristic feel */
+      .scanlines {
+        background-image: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0,0,0,0.04) 2px,
+          rgba(0,0,0,0.04) 4px
+        );
+      }
+
+      /* Vinyl disc animation */
+      @keyframes vinylSpin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+      .vinyl-rotate {
+        animation: vinylSpin 4s linear infinite;
+      }
+      .vinyl-rotate-paused {
+        animation-play-state: paused;
+      }
+
+      /* Hero backdrop blur card */
+      .glass-card {
+        background: rgba(26,22,19,0.65);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(200,151,63,0.18);
+        border-radius: 1.25rem;
+      }
+
+      /* Metric card hover */
+      .metric-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+      .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(200,151,63,0.18);
+      }
+
+      /* Label chip */
+      .label-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      /* Timeline / last-sold rows */
+      .sale-row + .sale-row {
+        border-top: 1px solid rgba(46,41,36,0.6);
+      }
+
+      /* Section dividers */
+      .section-rule {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #2e2924 30%, #2e2924 70%, transparent);
+        margin: 2rem 0;
+      }
+
+      /* Image gallery zoom */
+      .gallery-thumb {
+        cursor: zoom-in;
+        transition: opacity 0.2s, transform 0.2s;
+      }
+      .gallery-thumb:hover {
+        opacity: 0.85;
+        transform: scale(1.04);
+      }
+
+      /* Fullscreen overlay */
+      #photoOverlay {
+        background: rgba(0,0,0,0.92);
+        backdrop-filter: blur(12px);
+      }
+
+      /* Pressing confidence badges */
+      .conf-high   { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+      .conf-medium { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+      .conf-low    { background: rgba(239,68,68,0.12);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  }
+    </style>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </head>
+
+  <body class="bg-surface text-gray-100 min-h-screen font-sans">
+    <a href="#main-content" class="skip-link">Skip to content</a>
+
+    <!-- Navigation -->
+    <vinyl-nav></vinyl-nav>
+
+    <!-- Main Content -->
+    <main id="main-content" class="pt-20 pb-16">
+
+      <!-- Back breadcrumb -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <a href="collection.html" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors group">
+          <svg class="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          Back to Collection
+        </a>
+      </div>
+
+      <!-- Loading / error state -->
+      <div id="loadingState" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 vinyl-rotate">
+          <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="38" fill="#0e0c0b"/>
+            <circle cx="40" cy="40" r="33" fill="none" stroke="#2e2924" stroke-width="1.5"/>
+            <circle cx="40" cy="40" r="27" fill="none" stroke="#2e2924" stroke-width="1.5"/>
+            <circle cx="40" cy="40" r="21" fill="none" stroke="#2e2924" stroke-width="1.5"/>
+            <circle cx="40" cy="40" r="18" fill="#c8973f"/>
+            <circle cx="40" cy="40" r="5" fill="#0e0c0b"/>
+          </svg>
+        </div>
+        <p class="text-gray-500 text-sm">Loading record details…</p>
+      </div>
+
+      <div id="errorState" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-surface-light border border-gray-700 flex items-center justify-center">
+          <i data-feather="alert-circle" class="w-10 h-10 text-gray-600"></i>
+        </div>
+        <h3 class="text-xl font-semibold mb-2">Record Not Found</h3>
+        <p class="text-gray-500 mb-6">This record could not be found in your collection.</p>
+        <a href="collection.html" class="inline-flex items-center gap-2 px-6 py-3 bg-primary text-surface rounded-xl font-semibold hover:bg-accent transition-colors">
+          <i data-feather="archive" class="w-4 h-4"></i>
+          Go to Collection
+        </a>
+      </div>
+
+      <!-- Record Detail (populated by JS) -->
+      <article id="recordDetail" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- ─── HERO ─────────────────────────────────────────────────── -->
+        <header class="relative mb-10 rounded-2xl overflow-hidden grad-border bg-surface-light">
+          <!-- Background blur image -->
+          <div id="heroBg" class="absolute inset-0 bg-cover bg-center opacity-10 blur-md scale-110 pointer-events-none"></div>
+          <div class="relative z-10 flex flex-col md:flex-row gap-8 p-8">
+
+            <!-- Vinyl disc / photo -->
+            <div class="flex-shrink-0 relative w-56 h-56 mx-auto md:mx-0">
+              <div id="heroDisc" class="w-56 h-56 rounded-full border-4 border-gray-800 overflow-hidden bg-surface shadow-2xl glow-primary cursor-pointer" onclick="openPhoto(0)">
+                <!-- Default vinyl SVG (replaced if photos exist) -->
+                <svg viewBox="0 0 224 224" xmlns="http://www.w3.org/2000/svg" id="defaultDisc">
+                  <circle cx="112" cy="112" r="112" fill="#111"/>
+                  <circle cx="112" cy="112" r="100" fill="none" stroke="#2e2924" stroke-width="2"/>
+                  <circle cx="112" cy="112" r="85"  fill="none" stroke="#2e2924" stroke-width="1.5"/>
+                  <circle cx="112" cy="112" r="70"  fill="none" stroke="#2e2924" stroke-width="1.5"/>
+                  <circle cx="112" cy="112" r="56"  fill="none" stroke="#2e2924" stroke-width="1.5"/>
+                  <circle cx="112" cy="112" r="44"  fill="#c8973f"/>
+                  <circle cx="112" cy="112" r="37"  fill="none" stroke="#a07830" stroke-width="1"/>
+                  <circle cx="112" cy="112" r="14"  fill="#0e0c0b"/>
+                </svg>
+              </div>
+              <!-- Spin indicator -->
+              <button id="spinBtn" onclick="toggleSpin()" class="absolute bottom-2 right-2 w-8 h-8 bg-surface-light border border-gray-700 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary transition-all" title="Toggle spin">
+                <i data-feather="play" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+
+            <!-- Metadata -->
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
+                <div>
+                  <p id="heroArtist" class="text-primary font-semibold text-lg mb-1 tracking-wide"></p>
+                  <h1 id="heroTitle" class="font-display text-3xl sm:text-4xl font-bold text-white leading-tight mb-3"></h1>
+                  <div id="heroChips" class="flex flex-wrap gap-2 mb-4"></div>
+                </div>
+                <div id="heroStatus" class="flex-shrink-0"></div>
+              </div>
+
+              <!-- Quick stats grid -->
+              <div id="heroStats" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></div>
+
+              <!-- Action buttons -->
+              <div id="heroActions" class="flex flex-wrap gap-3 mt-6"></div>
+            </div>
+          </div>
+        </header>
+
+        <!-- ─── PHOTO GALLERY ─────────────────────────────────────────── -->
+        <section id="gallerySection" class="hidden mb-10">
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Photos</h2>
+          <div id="galleryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3"></div>
+        </section>
+
+        <!-- ─── MAIN GRID ─────────────────────────────────────────────── -->
+        <div class="grid lg:grid-cols-3 gap-8">
+
+          <!-- LEFT: Details & Pressing -->
+          <div class="lg:col-span-2 space-y-8">
+
+            <!-- Release Details -->
+            <section class="bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="disc" class="w-4 h-4 text-primary"></i>
+                Release Details
+              </h2>
+              <dl id="releaseDetails" class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm"></dl>
+            </section>
+
+            <!-- Pressing Intelligence -->
+            <section id="pressingSection" class="hidden bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="layers" class="w-4 h-4 text-accent"></i>
+                Pressing Intelligence
+              </h2>
+              <div id="pressingContent"></div>
+            </section>
+
+            <!-- Condition -->
+            <section class="bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="shield" class="w-4 h-4 text-primary"></i>
+                Condition
+              </h2>
+              <div id="conditionContent" class="grid grid-cols-2 gap-4"></div>
+            </section>
+
+            <!-- Tracklist -->
+            <section id="tracklistSection" class="hidden bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="music" class="w-4 h-4 text-primary"></i>
+                Tracklist
+              </h2>
+              <ol id="tracklistContent" class="space-y-2 text-sm"></ol>
+            </section>
+
+            <!-- Notes -->
+            <section id="notesSection" class="hidden bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <i data-feather="file-text" class="w-4 h-4 text-secondary"></i>
+                Notes
+              </h2>
+              <p id="notesContent" class="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap"></p>
+            </section>
+          </div>
+
+          <!-- RIGHT: Valuation & Links -->
+          <div class="space-y-8">
+
+            <!-- Valuation -->
+            <section class="bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="trending-up" class="w-4 h-4 text-profit"></i>
+                Valuation
+              </h2>
+              <div id="valuationContent"></div>
+            </section>
+
+            <!-- Market Activity -->
+            <section id="marketSection" class="hidden bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-5 flex items-center gap-2">
+                <i data-feather="bar-chart-2" class="w-4 h-4 text-accent"></i>
+                Market Activity
+              </h2>
+              <div id="marketContent"></div>
+            </section>
+
+            <!-- eBay Strategy -->
+            <section id="strategySection" class="hidden bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <i data-feather="zap" class="w-4 h-4 text-primary"></i>
+                eBay Strategy
+              </h2>
+              <div id="strategyContent" class="text-sm text-gray-300 leading-relaxed"></div>
+            </section>
+
+            <!-- External Links -->
+            <section class="bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <i data-feather="external-link" class="w-4 h-4 text-secondary"></i>
+                External Links
+              </h2>
+              <div id="externalLinks" class="space-y-2"></div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="bg-surface-light rounded-2xl border border-gray-800 p-6">
+              <h2 class="text-base font-semibold text-gray-200 mb-4 flex items-center gap-2">
+                <i data-feather="tool" class="w-4 h-4 text-secondary"></i>
+                Quick Actions
+              </h2>
+              <div id="quickActions" class="space-y-2"></div>
+            </section>
+          </div>
+        </div>
+      </article>
+    </main>
+
+    <!-- Photo Fullscreen Overlay -->
+    <div id="photoOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center" onclick="closePhotoOverlay()">
+      <button class="absolute top-6 right-6 text-white/60 hover:text-white z-10" onclick="closePhotoOverlay()">
+        <i data-feather="x" class="w-7 h-7"></i>
+      </button>
+      <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white z-10 p-2" onclick="prevPhoto(event)">
+        <i data-feather="chevron-left" class="w-8 h-8"></i>
+      </button>
+      <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white z-10 p-2" onclick="nextPhoto(event)">
+        <i data-feather="chevron-right" class="w-8 h-8"></i>
+      </button>
+      <img id="overlayImg" src="" alt="Record photo" class="max-w-[90vw] max-h-[90vh] object-contain rounded-xl shadow-2xl">
+    </div>
+
+    <!-- Footer -->
+    <vinyl-footer></vinyl-footer>
+
+    <!-- Components -->
+    <script src="components/vinyl-nav.js"></script>
+    <script src="components/vinyl-footer.js"></script>
+
+    <script>
+      feather.replace();
+
+      // ─── Helpers ─────────────────────────────────────────────────────
+      function getUrlParam(name) {
+        return new URLSearchParams(window.location.search).get(name);
+      }
+
+      function loadCollection() {
+        try {
+          return JSON.parse(localStorage.getItem("vinyl_collection") || "[]");
+        } catch { return []; }
+      }
+
+      function escHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function conditionClass(grade) {
+        const map = { NM: "conf-high", "VG+": "conf-high", VG: "conf-medium", G: "conf-low", P: "conf-low", F: "conf-low" };
+        return map[grade] || "bg-surface-mid text-gray-400 border border-gray-700";
+      }
+
+      function fmt(v, prefix = "£") {
+        const n = parseFloat(v);
+        return isNaN(n) ? "—" : prefix + n.toFixed(2);
+      }
+
+      function dtField(label, value) {
+        if (!value && value !== 0) return "";
+        return `
+          <div>
+            <dt class="text-xs text-gray-500 mb-0.5">${escHtml(label)}</dt>
+            <dd class="text-gray-200 font-medium">${escHtml(String(value))}</dd>
+          </div>`;
+      }
+
+      // ─── Photo Overlay ────────────────────────────────────────────────
+      let _photos = [];
+      let _photoIdx = 0;
+
+      function openPhoto(idx) {
+        if (!_photos.length) return;
+        _photoIdx = idx;
+        const src = _photos[idx]?.url || _photos[idx];
+        if (!src) return;
+        document.getElementById("overlayImg").src = src;
+        document.getElementById("photoOverlay").classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+      }
+      function closePhotoOverlay() {
+        document.getElementById("photoOverlay").classList.add("hidden");
+        document.body.style.overflow = "";
+      }
+      function prevPhoto(e) {
+        e.stopPropagation();
+        _photoIdx = (_photoIdx - 1 + _photos.length) % _photos.length;
+        openPhoto(_photoIdx);
+      }
+      function nextPhoto(e) {
+        e.stopPropagation();
+        _photoIdx = (_photoIdx + 1) % _photos.length;
+        openPhoto(_photoIdx);
+      }
+
+      // ─── Vinyl Spin ───────────────────────────────────────────────────
+      let _spinning = false;
+      function toggleSpin() {
+        _spinning = !_spinning;
+        const disc = document.getElementById("heroDisc");
+        const btn  = document.getElementById("spinBtn");
+        if (_spinning) {
+          disc.classList.add("vinyl-rotate");
+          btn.innerHTML = '<i data-feather="pause" class="w-3.5 h-3.5"></i>';
+        } else {
+          disc.classList.remove("vinyl-rotate");
+          btn.innerHTML = '<i data-feather="play" class="w-3.5 h-3.5"></i>';
+        }
+        feather.replace();
+      }
+
+      // ─── Build page ───────────────────────────────────────────────────
+      function buildConditionBadge(grade) {
+        const safeGrade = grade ? escHtml(String(grade)) : "—";
+        return `<span class="label-chip ${conditionClass(grade)}">${safeGrade}</span>`;
+      }
+
+      function buildPage(record, idx) {
+        // ── Hero ──────────────────────────────────────────────────────
+        _photos = Array.isArray(record.photos) ? record.photos : [];
+
+        // Set hero bg
+        const firstPhotoSrc = _photos[0]?.url || _photos[0];
+        if (firstPhotoSrc) {
+          const safeFirstPhotoSrc = String(firstPhotoSrc).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+          document.getElementById("heroBg").style.backgroundImage = `url('${safeFirstPhotoSrc}')`;
+          // Replace default disc with photo using safe DOM creation
+          const disc = document.getElementById("heroDisc");
+          const img = document.createElement("img");
+          img.src = firstPhotoSrc;
+          img.className = "w-full h-full object-cover";
+          img.alt = `${record.artist || "Record"} - ${record.title || ""}`;
+          img.addEventListener("error", () => {
+            const defaultDisc = document.getElementById("defaultDisc");
+            if (defaultDisc) disc.innerHTML = defaultDisc.outerHTML;
+          });
+          disc.innerHTML = "";
+          disc.appendChild(img);
+        }
+
+        document.getElementById("heroArtist").textContent = record.artist || "Unknown Artist";
+        document.getElementById("heroTitle").textContent  = record.title  || "Unknown Title";
+        document.title = `${record.artist || ""} – ${record.title || ""} | VinylVault Pro`;
+
+        // Chips
+        const chips = [];
+        if (record.year)         chips.push(`<span class="label-chip bg-surface-mid text-gray-300 border border-gray-700">${escHtml(record.year)}</span>`);
+        if (record.format)       chips.push(`<span class="label-chip bg-surface-mid text-gray-300 border border-gray-700">${escHtml(record.format)}</span>`);
+        if (record.country)      chips.push(`<span class="label-chip bg-surface-mid text-gray-300 border border-gray-700">${escHtml(record.country)}</span>`);
+        if (record.label)        chips.push(`<span class="label-chip bg-primary/15 text-primary border border-primary/30">${escHtml(record.label)}</span>`);
+        if (record.isFirstPress) chips.push(`<span class="label-chip bg-accent/15 text-accent border border-accent/30">★ First Press</span>`);
+        else if (record.pressingType) chips.push(`<span class="label-chip bg-surface-mid text-gray-400 border border-gray-700">${escHtml(record.pressingType.replace(/_/g, " "))}</span>`);
+        if (record.genre)        chips.push(`<span class="label-chip bg-purple-500/10 text-purple-300 border border-purple-500/25">${escHtml(record.genre)}</span>`);
+        document.getElementById("heroChips").innerHTML = chips.join("");
+
+        // Status badge
+        const statusMap = {
+          owned:  { label: "Owned",  cls: "bg-gray-600 text-white" },
+          listed: { label: "Listed", cls: "bg-blue-600 text-white" },
+          sold:   { label: "Sold",   cls: "bg-green-600 text-white" },
+        };
+        const st = statusMap[record.status] || statusMap.owned;
+        document.getElementById("heroStatus").innerHTML = `<span class="label-chip ${st.cls}">${st.label}</span>`;
+
+        // Quick stats
+        const estValue = record.estimatedValue || record.csvMarketData?.median || 0;
+        const profit   = record.profitPotential ?? (estValue - (record.purchasePrice || 0));
+        const roi      = record.roi ?? (record.purchasePrice > 0 ? ((profit / record.purchasePrice) * 100).toFixed(1) : null);
+        const profitColor = profit >= 0 ? "text-profit" : "text-loss";
+
+        document.getElementById("heroStats").innerHTML = `
+          <div class="glass-card p-4 metric-card">
+            <p class="text-xs text-gray-500 mb-1">Invested</p>
+            <p class="text-xl font-bold text-gray-100">${fmt(record.purchasePrice)}</p>
+          </div>
+          <div class="glass-card p-4 metric-card">
+            <p class="text-xs text-gray-500 mb-1">Est. Value</p>
+            <p class="text-xl font-bold text-gray-100">${estValue ? fmt(estValue) : "—"}</p>
+          </div>
+          <div class="glass-card p-4 metric-card">
+            <p class="text-xs text-gray-500 mb-1">Profit</p>
+            <p class="text-xl font-bold ${profitColor}">${fmt(profit)}</p>
+          </div>
+          <div class="glass-card p-4 metric-card">
+            <p class="text-xs text-gray-500 mb-1">ROI</p>
+            <p class="text-xl font-bold ${profitColor}">${roi !== null ? roi + "%" : "—"}</p>
+          </div>`;
+
+        // Hero action buttons
+        const artistQ  = encodeURIComponent(`${record.artist || ""} ${record.title || ""}`);
+        const discogsQ = encodeURIComponent(`${record.artist || ""} ${record.title || ""} ${record.catalogueNumber || ""}`);
+        document.getElementById("heroActions").innerHTML = `
+          <button onclick="generateListing(${idx})" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-surface rounded-xl font-semibold text-sm hover:shadow-lg hover:shadow-primary/30 transition-all">
+            <i data-feather="zap" class="w-4 h-4"></i>Generate Listing
+          </button>
+          <a href="https://www.discogs.com/search/?q=${discogsQ}&type=release" target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-600/20 text-orange-400 border border-orange-600/30 rounded-xl font-semibold text-sm hover:bg-orange-600/30 transition-all">
+            <i data-feather="search" class="w-4 h-4"></i>Search Discogs
+          </a>
+          <a href="https://www.ebay.co.uk/sch/i.html?_nkw=${artistQ}&_sacat=306&LH_Sold=1" target="_blank" rel="noopener noreferrer"
+             class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600/20 text-blue-400 border border-blue-600/30 rounded-xl font-semibold text-sm hover:bg-blue-600/30 transition-all">
+            <i data-feather="shopping-cart" class="w-4 h-4"></i>eBay Sold
+          </a>
+          <a href="collection.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-mid text-gray-400 border border-gray-700 rounded-xl font-semibold text-sm hover:text-gray-200 transition-all">
+            <i data-feather="arrow-left" class="w-4 h-4"></i>Collection
+          </a>`;
+
+        // ── Gallery ───────────────────────────────────────────────────
+        if (_photos.length > 0) {
+          document.getElementById("gallerySection").classList.remove("hidden");
+          document.getElementById("galleryGrid").innerHTML = _photos.map((p, i) => {
+            const src = p?.url || p;
+            return `<div class="aspect-square rounded-xl overflow-hidden bg-surface-mid border border-gray-800 gallery-thumb" onclick="openPhoto(${i})">
+              <img src="${escHtml(String(src))}" alt="Photo ${i+1}" class="w-full h-full object-cover" loading="lazy">
+            </div>`;
+          }).join("");
+        }
+
+        // ── Release Details ───────────────────────────────────────────
+        document.getElementById("releaseDetails").innerHTML = [
+          dtField("Artist",           record.artist),
+          dtField("Title",            record.title),
+          dtField("Label",            record.label),
+          dtField("Catalogue No.",    record.catalogueNumber),
+          dtField("Year",             record.year),
+          dtField("Original Year",    record.originalYear),
+          dtField("Format",           record.format),
+          dtField("Genre",            record.genre),
+          dtField("Country",          record.country),
+          dtField("Barcode",          record.barcode),
+          dtField("Label Code",       record.labelCode),
+          dtField("Rights Society",   record.rightsSociety),
+          dtField("Pressing Plant",   record.pressingPlant),
+          dtField("Purchase Date",    record.purchaseDate ? new Date(record.purchaseDate).toLocaleDateString("en-GB") : null),
+          dtField("Purchase Source",  record.purchaseSource),
+          dtField("Days Owned",       record.daysOwned != null ? record.daysOwned + " days" : null),
+        ].join("");
+
+        // ── Pressing Intelligence ─────────────────────────────────────
+        if (record.pressingType || record.matrixRunoutA || record.pressingInfo || record.pressingEvidence?.length) {
+          document.getElementById("pressingSection").classList.remove("hidden");
+          const confClass = { high: "conf-high", medium: "conf-medium", low: "conf-low" }[record.pressingConfidence] || "bg-surface-mid text-gray-400 border border-gray-700";
+          let pressingHtml = `<div class="flex flex-wrap gap-3 mb-5">`;
+          if (record.pressingType) {
+            const isFirst = record.pressingType === "first_press" || record.isFirstPress;
+            pressingHtml += `<span class="label-chip ${isFirst ? "bg-accent/15 text-accent border border-accent/30" : "bg-surface-mid text-gray-400 border border-gray-700"}">${record.pressingType.replace(/_/g," ")}</span>`;
+          }
+          if (record.pressingConfidence) pressingHtml += `<span class="label-chip ${confClass}">Confidence: ${record.pressingConfidence}</span>`;
+          pressingHtml += `</div>`;
+
+          if (record.matrixRunoutA || record.matrixRunoutB) {
+            pressingHtml += `<div class="bg-surface rounded-xl p-4 mb-4 font-mono text-xs text-gray-400 space-y-1">`;
+            if (record.matrixRunoutA) pressingHtml += `<div><span class="text-gray-600">Side A:</span> <span class="text-accent">${escHtml(record.matrixRunoutA)}</span></div>`;
+            if (record.matrixRunoutB) pressingHtml += `<div><span class="text-gray-600">Side B:</span> <span class="text-accent">${escHtml(record.matrixRunoutB)}</span></div>`;
+            pressingHtml += `</div>`;
+          }
+
+          if (record.pressingInfo) {
+            pressingHtml += `<p class="text-xs text-gray-400 mb-4">${escHtml(record.pressingInfo)}</p>`;
+          }
+
+          if (Array.isArray(record.pressingEvidence) && record.pressingEvidence.length) {
+            pressingHtml += `<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Evidence</h3><ul class="space-y-1.5">`;
+            pressingHtml += record.pressingEvidence.map(ev => `<li class="flex items-start gap-2 text-sm text-gray-300"><span class="text-accent mt-0.5">✓</span>${escHtml(ev)}</li>`).join("");
+            pressingHtml += `</ul>`;
+          }
+
+          document.getElementById("pressingContent").innerHTML = pressingHtml;
+        }
+
+        // ── Condition ─────────────────────────────────────────────────
+        document.getElementById("conditionContent").innerHTML = `
+          <div class="glass-card p-5 text-center metric-card">
+            <p class="text-xs text-gray-500 mb-2">Vinyl</p>
+            ${buildConditionBadge(record.conditionVinyl || "—")}
+          </div>
+          <div class="glass-card p-5 text-center metric-card">
+            <p class="text-xs text-gray-500 mb-2">Sleeve</p>
+            ${buildConditionBadge(record.conditionSleeve || "—")}
+          </div>`;
+
+        // ── Tracklist ─────────────────────────────────────────────────
+        const tracks = record.discogsData?.tracklist || record.tracklist;
+        if (Array.isArray(tracks) && tracks.length) {
+          document.getElementById("tracklistSection").classList.remove("hidden");
+          document.getElementById("tracklistContent").innerHTML = tracks.map((t, i) => `
+            <li class="flex items-baseline gap-3 py-2 border-b border-gray-800/60">
+              <span class="text-xs text-gray-600 w-6 flex-shrink-0 text-right">${escHtml(String(t.position || (i+1)))}</span>
+              <span class="flex-1 text-gray-300">${escHtml(t.title || String(t))}</span>
+              <span class="text-xs text-gray-600">${escHtml(t.duration || "")}</span>
+            </li>`).join("");
+        }
+
+        // ── Notes ─────────────────────────────────────────────────────
+        if (record.notes) {
+          document.getElementById("notesSection").classList.remove("hidden");
+          document.getElementById("notesContent").textContent = record.notes;
+        }
+
+        // ── Valuation ─────────────────────────────────────────────────
+        const suggestedPrice = record.suggestedListingPrice || (estValue ? Math.round(estValue * 1.1) : null);
+        document.getElementById("valuationContent").innerHTML = `
+          <div class="space-y-3">
+            <div class="flex justify-between items-center text-sm py-2 border-b border-gray-800">
+              <span class="text-gray-500">Purchase Price</span>
+              <span class="font-semibold text-gray-200">${fmt(record.purchasePrice)}</span>
+            </div>
+            <div class="flex justify-between items-center text-sm py-2 border-b border-gray-800">
+              <span class="text-gray-500">Est. Market Value</span>
+              <span class="font-semibold text-primary">${estValue ? fmt(estValue) : "—"}</span>
+            </div>
+            ${suggestedPrice ? `<div class="flex justify-between items-center text-sm py-2 border-b border-gray-800">
+              <span class="text-gray-500">Suggested Listing</span>
+              <span class="font-semibold text-accent">${fmt(suggestedPrice)}</span>
+            </div>` : ""}
+            <div class="flex justify-between items-center text-sm py-2 border-b border-gray-800">
+              <span class="text-gray-500">Profit Potential</span>
+              <span class="font-semibold ${profitColor}">${fmt(profit)}</span>
+            </div>
+            <div class="flex justify-between items-center text-sm py-2">
+              <span class="text-gray-500">ROI</span>
+              <span class="font-semibold ${profitColor}">${roi !== null ? roi + "%" : "—"}</span>
+            </div>
+          </div>`;
+
+        // ── Market Activity ───────────────────────────────────────────
+        const md = record.marketData;
+        if (md && Array.isArray(md.lastSold) && md.lastSold.length) {
+          document.getElementById("marketSection").classList.remove("hidden");
+          const srcLabelRaw = {
+            ebay_google:   "eBay Sold (via Google)",
+            discogs:       "Discogs Price Guide",
+            csv_import:    "CSV Import",
+          }[md.source] || "Market Data";
+          const srcLabel = escHtml(srcLabelRaw);
+
+          let mHtml = `<p class="text-xs text-gray-500 mb-3">${srcLabel}`;
+          if (md.confidence) {
+            const confClass = md.confidence === "high" ? "text-green-400" : "text-yellow-400";
+            mHtml += ` · <span class="${confClass}">${escHtml(md.confidence)} confidence</span>`;
+          }
+          mHtml += `</p><div class="space-y-0">`;
+          mHtml += md.lastSold.map(s => {
+            const priceStr = `£${parseFloat(s.price).toFixed(2)}`;
+            const meta = [
+              s.condition ? escHtml(s.condition) : "",
+              s.date ? escHtml(s.date) : "",
+            ].filter(Boolean).join(" · ");
+            const linkHtml = s.url
+              ? `<a href="${escHtml(String(s.url))}" target="_blank" rel="noopener noreferrer" class="hover:underline">${priceStr}</a>`
+              : priceStr;
+            return `<div class="sale-row flex justify-between items-center py-2 text-sm">
+              <span class="text-gray-400">${meta || "Sold"}</span>
+              <span class="font-medium ${s.url ? "text-primary" : "text-gray-200"}">${linkHtml}</span>
+            </div>`;
+          }).join("");
+          mHtml += `</div>`;
+          if (md.medianPrice) {
+            mHtml += `<div class="mt-3 pt-3 border-t border-gray-800 flex justify-between text-sm">
+              <span class="text-gray-500">Median</span>
+              <span class="font-bold text-primary">£${parseFloat(md.medianPrice).toFixed(2)}</span>
+            </div>`;
+          }
+          document.getElementById("marketContent").innerHTML = mHtml;
+        } else if (record.csvMarketData?.median) {
+          document.getElementById("marketSection").classList.remove("hidden");
+          document.getElementById("marketContent").innerHTML = `
+            <div class="text-xs text-yellow-400 mb-3">Imported Market Data</div>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-gray-500">Low</span><span>${fmt(record.csvMarketData.low)}</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">Median</span><span class="text-primary font-semibold">${fmt(record.csvMarketData.median)}</span></div>
+              <div class="flex justify-between"><span class="text-gray-500">High</span><span>${fmt(record.csvMarketData.high)}</span></div>
+              ${record.csvMarketData.lastSold ? `<div class="flex justify-between"><span class="text-gray-500">Last Sold</span><span>${fmt(record.csvMarketData.lastSold)}</span></div>` : ""}
+            </div>`;
+        }
+
+        // ── eBay Strategy ─────────────────────────────────────────────
+        if (record.ebayStrategy) {
+          document.getElementById("strategySection").classList.remove("hidden");
+          document.getElementById("strategyContent").innerHTML = typeof record.ebayStrategy === "string"
+            ? escHtml(record.ebayStrategy).replace(/\n/g, "<br>")
+            : escHtml(JSON.stringify(record.ebayStrategy, null, 2)).replace(/\n/g, "<br>").replace(/ /g, "&nbsp;");
+        }
+
+        // ── External Links ────────────────────────────────────────────
+        const catQ = encodeURIComponent(record.catalogueNumber || "");
+        const titleQ = encodeURIComponent(`${record.artist || ""} ${record.title || ""}`);
+        const links = [
+          { label: "Discogs Release Search", icon: "search", href: `https://www.discogs.com/search/?q=${discogsQ}&type=release`, color: "text-orange-400", border: "border-orange-600/30", bg: "hover:bg-orange-600/10" },
+          { label: "eBay Sold Listings", icon: "shopping-cart", href: `https://www.ebay.co.uk/sch/i.html?_nkw=${titleQ}&_sacat=306&LH_Sold=1`, color: "text-blue-400", border: "border-blue-600/30", bg: "hover:bg-blue-600/10" },
+          { label: "eBay Active Listings", icon: "tag", href: `https://www.ebay.co.uk/sch/i.html?_nkw=${titleQ}&_sacat=306`, color: "text-blue-400", border: "border-blue-600/30", bg: "hover:bg-blue-600/10" },
+          { label: "Popsike Price History", icon: "activity", href: `https://www.popsike.com/php/quicksearch.php?searchtext=${titleQ}`, color: "text-green-400", border: "border-green-600/30", bg: "hover:bg-green-600/10" },
+          { label: "MusicBrainz Lookup", icon: "database", href: `https://musicbrainz.org/search?query=${titleQ}&type=release`, color: "text-purple-400", border: "border-purple-600/30", bg: "hover:bg-purple-600/10" },
+          record.catalogueNumber ? { label: "Discogs by Cat. No.", icon: "hash", href: `https://www.discogs.com/search/?catno=${catQ}&type=release`, color: "text-orange-400", border: "border-orange-600/30", bg: "hover:bg-orange-600/10" } : null,
+        ].filter(Boolean);
+
+        document.getElementById("externalLinks").innerHTML = links.map(l => `
+          <a href="${l.href}" target="_blank" rel="noopener noreferrer"
+             class="flex items-center gap-3 px-4 py-3 rounded-xl border ${l.border} ${l.bg} transition-all group">
+            <i data-feather="${l.icon}" class="w-4 h-4 ${l.color} flex-shrink-0"></i>
+            <span class="text-sm text-gray-300 group-hover:text-gray-100 flex-1">${l.label}</span>
+            <i data-feather="external-link" class="w-3 h-3 text-gray-600 group-hover:text-gray-400"></i>
+          </a>`).join("");
+
+        // ── Quick Actions ─────────────────────────────────────────────
+        document.getElementById("quickActions").innerHTML = `
+          <button onclick="generateListing(${idx})" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/15 border border-primary/30 hover:bg-primary/25 transition-all group w-full text-left">
+            <i data-feather="zap" class="w-4 h-4 text-primary flex-shrink-0"></i>
+            <span class="text-sm text-gray-300 group-hover:text-gray-100">Generate eBay Listing</span>
+          </button>
+          <button onclick="refreshPrices(${idx})" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-mid border border-gray-700 hover:border-gray-600 transition-all group w-full text-left">
+            <i data-feather="refresh-cw" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+            <span class="text-sm text-gray-300 group-hover:text-gray-100">Refresh Prices &amp; Details</span>
+          </button>
+          <a href="collection.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-mid border border-gray-700 hover:border-gray-600 transition-all group">
+            <i data-feather="list" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+            <span class="text-sm text-gray-300 group-hover:text-gray-100">View Full Collection</span>
+          </a>
+          <a href="deals.html" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-surface-mid border border-gray-700 hover:border-gray-600 transition-all group">
+            <i data-feather="percent" class="w-4 h-4 text-gray-400 flex-shrink-0"></i>
+            <span class="text-sm text-gray-300 group-hover:text-gray-100">Find Similar Deals</span>
+          </a>`;
+
+        // Reveal page
+        document.getElementById("loadingState").classList.add("hidden");
+        document.getElementById("recordDetail").classList.remove("hidden");
+        feather.replace();
+      }
+
+      // ─── Generate listing (navigate to index with collection import) ─
+      function generateListing(idx) {
+        localStorage.setItem("collection_import_index", idx);
+        window.location.href = "index.html?from=collection&idx=" + idx;
+      }
+
+      // ─── Refresh prices (delegates to collection.html logic) ─────────
+      function refreshPrices(idx) {
+        localStorage.setItem("collection_refresh_on_load", idx);
+        window.location.href = "collection.html?refresh=" + idx;
+      }
+
+      // ─── Main ────────────────────────────────────────────────────────
+      document.addEventListener("DOMContentLoaded", () => {
+        const idxParam = getUrlParam("idx");
+        const idx = idxParam !== null ? parseInt(idxParam, 10) : NaN;
+        const collection = loadCollection();
+
+        if (isNaN(idx) || idx < 0 || idx >= collection.length) {
+          document.getElementById("loadingState").classList.add("hidden");
+          document.getElementById("errorState").classList.remove("hidden");
+          feather.replace();
+          return;
+        }
+
+        buildPage(collection[idx], idx);
+      });
+    </script>
+  </body>
+</html>

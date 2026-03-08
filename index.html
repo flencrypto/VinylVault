@@ -91,151 +91,141 @@
     <!-- Main Content -->
     <main id="main-content" class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
       <!-- Hero Section -->
-      <section class="mb-12 text-center">
-        <div
-          class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6"
-        >
-          <i data-feather="disc" class="w-4 h-4 text-primary"></i>
-          <span class="text-sm font-medium text-primary"
-            >Professional eBay Listing Tool</span
+      <section class="mb-12 text-center relative overflow-hidden py-8">
+        <!-- Ambient glow blobs -->
+        <div class="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-primary/8 blur-3xl pointer-events-none -translate-y-1/2"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 rounded-full bg-accent/5 blur-3xl pointer-events-none -translate-y-1/2"></div>
+
+        <div class="relative z-10">
+          <div
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/25 mb-6 shadow-[0_0_16px_rgba(200,151,63,0.12)]"
           >
+            <svg class="w-4 h-4 text-primary animate-spin" style="animation-duration:8s" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" fill="#0e0c0b"/><circle cx="12" cy="12" r="8" fill="none" stroke="#2e2924" stroke-width="1"/><circle cx="12" cy="12" r="5" fill="#c8973f"/><circle cx="12" cy="12" r="1.5" fill="#0e0c0b"/>
+            </svg>
+            <span class="text-sm font-medium text-primary tracking-wide">Professional eBay Listing Tool</span>
+          </div>
+          <h1
+            class="text-4xl md:text-6xl font-bold mb-4 hero-text leading-tight"
+          >
+            VinylVault Pro
+          </h1>
+          <p class="text-gray-400 max-w-2xl mx-auto text-lg mb-6">
+            Upload your record photos and get AI-powered eBay titles, pressing identification,
+            competitive pricing, and professional listings — in seconds.
+          </p>
+          <div class="flex flex-wrap justify-center gap-3">
+            <a href="collection.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-light border border-primary/30 text-primary rounded-xl text-sm font-semibold hover:bg-primary/10 transition-all hover:shadow-[0_0_16px_rgba(200,151,63,0.2)]">
+              <i data-feather="archive" class="w-4 h-4"></i>My Collection
+            </a>
+            <a href="deals.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-light border border-gray-700 text-gray-300 rounded-xl text-sm font-semibold hover:border-gray-500 hover:text-white transition-all">
+              <i data-feather="percent" class="w-4 h-4"></i>Find Deals
+            </a>
+            <a href="settings.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-surface-light border border-gray-700 text-gray-300 rounded-xl text-sm font-semibold hover:border-gray-500 hover:text-white transition-all">
+              <i data-feather="settings" class="w-4 h-4"></i>Configure AI
+            </a>
+          </div>
         </div>
-        <h1
-          class="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"
-        >
-          VinylVault Pro
-        </h1>
-        <p class="text-gray-400 max-w-2xl mx-auto text-lg">
-          Upload your record photos and get optimized eBay titles, pricing
-          strategies, and professional HTML descriptions in minutes.
-        </p>
       </section>
 
-      <!-- Quick Stats -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-        <stat-card
-          icon="check-circle"
-          label="Listings Generated"
-          value="2,847"
-          trend="+12%"
-        ></stat-card>
-        <stat-card
-          icon="trending-up"
-          label="Avg. Sale Price"
-          value="£34.50"
-          trend="+8%"
-        ></stat-card>
-        <stat-card
-          icon="clock"
-          label="Time Saved"
-          value="15 min/listing"
-          trend="per listing"
-        ></stat-card>
+      <!-- Quick Stats — populated from localStorage by JS -->
+      <div id="dashboardStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+        <div class="bg-surface-light rounded-2xl border border-gray-800 p-5 glow-card gradient-border">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+              <i data-feather="archive" class="w-5 h-5 text-primary"></i>
+            </div>
+            <a href="collection.html" class="text-xs text-gray-600 hover:text-primary transition-colors">View →</a>
+          </div>
+          <p class="text-xs text-gray-500 mb-1">Collection Size</p>
+          <p id="statCollectionSize" class="text-2xl font-bold text-gray-100">—</p>
+        </div>
+        <div class="bg-surface-light rounded-2xl border border-gray-800 p-5 glow-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-profit/10 flex items-center justify-center">
+              <i data-feather="trending-up" class="w-5 h-5 text-profit"></i>
+            </div>
+            <span class="text-xs text-gray-600">Portfolio</span>
+          </div>
+          <p class="text-xs text-gray-500 mb-1">Est. Total Value</p>
+          <p id="statTotalValue" class="text-2xl font-bold text-gray-100">—</p>
+        </div>
+        <div class="bg-surface-light rounded-2xl border border-gray-800 p-5 glow-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
+              <i data-feather="percent" class="w-5 h-5 text-accent"></i>
+            </div>
+            <a href="deals.html" class="text-xs text-gray-600 hover:text-primary transition-colors">Find →</a>
+          </div>
+          <p class="text-xs text-gray-500 mb-1">Avg. ROI</p>
+          <p id="statAvgROI" class="text-2xl font-bold text-gray-100">—</p>
+        </div>
+        <div class="bg-surface-light rounded-2xl border border-gray-800 p-5 glow-card">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <i data-feather="zap" class="w-5 h-5 text-blue-400"></i>
+            </div>
+            <span class="text-xs text-gray-600">AI</span>
+          </div>
+          <p class="text-xs text-gray-500 mb-1">Active Provider</p>
+          <p id="statAIProvider" class="text-2xl font-bold text-gray-100">—</p>
+        </div>
       </div>
 
-      <!-- Futuristic Features Showcase -->
+      <!-- Platform Capabilities -->
       <section class="mb-12">
-        <div
-          class="glass-dark rounded-3xl p-8 border border-primary/20 relative overflow-hidden"
-        >
-          <div class="particles absolute inset-0"></div>
+        <div class="relative bg-surface-light rounded-3xl border border-gray-800 p-8 overflow-hidden">
+          <!-- Subtle radial glow background -->
+          <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(200,151,63,0.07)_0%,transparent_60%)] pointer-events-none"></div>
           <div class="relative z-10">
-            <div class="text-center mb-8">
-              <h2 class="text-3xl font-bold mb-4 gold-text">
-                🚀 Next-Gen Features
-              </h2>
-              <p class="text-gray-400">
-                Experience the future of vinyl management
-              </p>
+            <div class="flex items-center gap-3 mb-8 section-header-accent">
+              <i data-feather="cpu" class="w-5 h-5 text-primary flex-shrink-0"></i>
+              <h2 class="text-xl font-bold text-gray-100">Platform Capabilities</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <!-- AI Mood Analysis -->
-              <div
-                class="bg-surface/50 rounded-xl p-6 border border-secondary/30 hover:bronze-glow transition-all cursor-pointer group"
-              >
-                <div
-                  class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center mb-4 group-hover:studio-pulse"
-                >
-                  <i data-feather="cpu" class="w-6 h-6 text-secondary"></i>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <!-- AI Vision OCR -->
+              <div class="bg-surface rounded-2xl p-5 border border-gray-800 hover:border-primary/40 hover:shadow-[0_0_24px_rgba(200,151,63,0.1)] transition-all group">
+                <div class="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary/25 transition-colors">
+                  <i data-feather="camera" class="w-5 h-5 text-primary"></i>
                 </div>
-                <h3 class="font-semibold mb-2">AI Mood Analysis</h3>
-                <p class="text-sm text-gray-400">
-                  Detect emotional vibes and genre classification from your
-                  records
+                <h3 class="font-semibold text-gray-100 mb-1.5">AI Vision OCR</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  xAI Grok & OpenAI identify artists, pressing details, and matrix numbers from photos instantly.
                 </p>
-                <button
-                  onclick="openMoodAnalysis()"
-                  class="mt-3 px-4 py-2 bg-secondary/20 rounded-lg text-secondary text-sm hover:bg-secondary/30 transition-colors"
-                >
-                  Analyze Now
-                </button>
               </div>
 
-              <!-- VR Preview -->
-              <div
-                class="bg-surface/50 rounded-xl p-6 border border-accent/30 hover:gold-glow transition-all cursor-pointer group"
-              >
-                <div
-                  class="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-4 group-hover:vinyl-rotate"
-                >
-                  <i data-feather="eye" class="w-6 h-6 text-accent"></i>
+              <!-- Pressing Intelligence -->
+              <div class="bg-surface rounded-2xl p-5 border border-gray-800 hover:border-accent/40 hover:shadow-[0_0_24px_rgba(232,192,106,0.08)] transition-all group">
+                <div class="w-11 h-11 rounded-xl bg-accent/10 flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                  <i data-feather="layers" class="w-5 h-5 text-accent"></i>
                 </div>
-                <h3 class="font-semibold mb-2">VR Listening Room</h3>
-                <p class="text-sm text-gray-400">
-                  Immerse yourself in virtual reality record previews
+                <h3 class="font-semibold text-gray-100 mb-1.5">Pressing Intelligence</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  Automatically classifies first press vs reissue using deadwax analysis and label identification.
                 </p>
-                <button
-                  onclick="openVRPreview()"
-                  class="mt-3 px-4 py-2 bg-accent/20 rounded-lg text-accent text-sm hover:bg-accent/30 transition-colors"
-                >
-                  Enter VR
-                </button>
               </div>
 
-              <!-- Blockchain Authenticity -->
-              <div
-                class="bg-surface/50 rounded-xl p-6 border border-primary/30 hover:gold-glow transition-all cursor-pointer group"
-              >
-                <div
-                  class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4 group-hover:holographic"
-                >
-                  <i data-feather="shield" class="w-6 h-6 text-primary"></i>
+              <!-- Live Market Data -->
+              <div class="bg-surface rounded-2xl p-5 border border-gray-800 hover:border-profit/40 hover:shadow-[0_0_24px_rgba(74,222,128,0.08)] transition-all group">
+                <div class="w-11 h-11 rounded-xl bg-profit/10 flex items-center justify-center mb-4 group-hover:bg-profit/20 transition-colors">
+                  <i data-feather="bar-chart-2" class="w-5 h-5 text-profit"></i>
                 </div>
-                <h3 class="font-semibold mb-2">Blockchain Authenticity</h3>
-                <p class="text-sm text-gray-400">
-                  Verify record authenticity with crypto certificates
+                <h3 class="font-semibold text-gray-100 mb-1.5">Live Market Data</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  Real eBay sold prices and Discogs pricing pull automatically to value your collection accurately.
                 </p>
-                <button
-                  onclick="openBlockchainAuth()"
-                  class="mt-3 px-4 py-2 bg-primary/20 rounded-lg text-primary text-sm hover:bg-primary/30 transition-colors"
-                >
-                  Verify
-                </button>
               </div>
 
-              <!-- Quantum Analytics -->
-              <div
-                class="bg-surface/50 rounded-xl p-6 border border-secondary/30 hover:bronze-glow transition-all cursor-pointer group"
-              >
-                <div
-                  class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center mb-4 group-hover:studio-loader"
-                >
-                  <i
-                    data-feather="bar-chart-2"
-                    class="w-6 h-6 text-secondary"
-                  ></i>
+              <!-- Collection Manager -->
+              <div class="bg-surface rounded-2xl p-5 border border-gray-800 hover:border-blue-500/40 hover:shadow-[0_0_24px_rgba(59,130,246,0.08)] transition-all group">
+                <div class="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+                  <i data-feather="archive" class="w-5 h-5 text-blue-400"></i>
                 </div>
-                <h3 class="font-semibold mb-2">Quantum Analytics</h3>
-                <p class="text-sm text-gray-400">
-                  Advanced market predictions and collection insights
+                <h3 class="font-semibold text-gray-100 mb-1.5">Collection Manager</h3>
+                <p class="text-sm text-gray-500 leading-relaxed">
+                  <a href="collection.html" class="text-primary hover:underline">Full vinyl catalogue</a> with profit tracking, ROI, and one-click eBay listing generation.
                 </p>
-                <button
-                  onclick="openQuantumAnalytics()"
-                  class="mt-3 px-4 py-2 bg-secondary/20 rounded-lg text-secondary text-sm hover:bg-secondary/30 transition-colors"
-                >
-                  Analyze
-                </button>
               </div>
             </div>
           </div>
@@ -902,7 +892,7 @@
     <script src="components/ocr-service.js"></script>
     <script src="components/enhanced-ocr-service.js"></script>
     <script src="components/discogs-service.js"></script>
-    <script src="components/deepseek-service.js"></script>
+    <script src="components/xai-service.js"></script>
     <script src="components/ai-chat.js"></script>
     <!-- Futuristic Features -->
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
@@ -1032,6 +1022,43 @@
           deferredPrompt = null;
         });
       }());
+    </script>
+
+    <!-- Dashboard stats population -->
+    <script>
+      (function populateDashboardStats() {
+        try {
+          const collection = JSON.parse(localStorage.getItem("vinyl_collection") || "[]");
+          const provider = localStorage.getItem("ai_provider") || "openai";
+          const providerNames = { openai: "OpenAI", xai: "xAI Grok" };
+
+          // Collection size
+          const sizeEl = document.getElementById("statCollectionSize");
+          if (sizeEl) sizeEl.textContent = collection.length || "0";
+
+          // Total estimated value
+          const totalValue = collection.reduce((sum, r) => {
+            const v = r.estimatedValue || r.csvMarketData?.median || 0;
+            return sum + parseFloat(v || 0);
+          }, 0);
+          const valueEl = document.getElementById("statTotalValue");
+          if (valueEl) valueEl.textContent = totalValue > 0 ? "£" + totalValue.toFixed(0) : "—";
+
+          // Avg ROI
+          const withROI = collection.filter(r => r.roi != null && !isNaN(parseFloat(r.roi)));
+          const avgROI = withROI.length > 0
+            ? (withROI.reduce((s, r) => s + parseFloat(r.roi), 0) / withROI.length).toFixed(0)
+            : null;
+          const roiEl = document.getElementById("statAvgROI");
+          if (roiEl) roiEl.textContent = avgROI !== null ? avgROI + "%" : "—";
+
+          // AI provider
+          const aiEl = document.getElementById("statAIProvider");
+          if (aiEl) aiEl.textContent = providerNames[provider] || provider.toUpperCase();
+        } catch (e) {
+          // non-critical
+        }
+      })();
     </script>
   </body>
 </html>
