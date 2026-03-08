@@ -26,6 +26,36 @@ To install it directly on an Android phone:
 
 ---
 
+## Automated CI Builds (GitHub Actions)
+
+The workflow `.github/workflows/build-android.yml` automatically rebuilds the APK
+whenever Android sources change on `main`. It can also be triggered manually.
+
+### What the workflow does
+
+| Condition | Result |
+|-----------|--------|
+| Any push to `main` that changes `android/**`, `/.well-known/assetlinks.json`, or `.github/workflows/build-android.yml` | Builds a **debug APK**, uploads as artifact |
+| Push to `main` with the above path changes **and** all 5 signing secrets set | Also builds and signs a **release APK + AAB**, uploads as artifact, and commits updated APK to `releases/` |
+| `workflow_dispatch` (manual trigger from the Actions tab) | Builds a **debug APK**, and if all 5 signing secrets are set, also builds and signs a **release APK + AAB**, uploads as artifacts, and commits updated APK to `releases/` |
+
+### Required GitHub Secrets (for release builds)
+
+Navigate to **GitHub → Repository → Settings → Secrets and variables → Actions** and add:
+
+| Secret name | Value |
+|-------------|-------|
+| `KEYSTORE_BASE64` | Base64-encoded release keystore. macOS: `base64 -i release.keystore`<br>Linux/CI: `base64 -w 0 release.keystore` |
+| `KEYSTORE_PASSWORD` | Keystore store password |
+| `KEY_ALIAS` | Key alias (default: `vinylvault`) |
+| `KEY_PASSWORD` | Key password |
+| `TWA_SHA256_CERT` | SHA-256 fingerprint matching `/.well-known/assetlinks.json` |
+
+If any of these secrets are missing the workflow skips the release build and only
+produces the debug APK. A workflow notice is emitted to explain the skip.
+
+---
+
 ## Building from Source
 
 ### Prerequisites
