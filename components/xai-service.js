@@ -7,8 +7,7 @@ class XAIService {
 
   isVisionModel(modelName) {
     if (!modelName) return false;
-    const normalized = modelName.toLowerCase();
-    return normalized.includes("vision") || normalized.includes("grok-2-vision");
+    return modelName.toLowerCase().includes("vision");
   }
 
   async parseError(response, fallbackMessage) {
@@ -45,7 +44,7 @@ class XAIService {
 
     if (!this.isVisionModel(this.model)) {
       throw new Error(
-        "Selected xAI model does not support image analysis. Please choose a vision-capable model (e.g. grok-2-vision-1212) in Settings.",
+        `Selected xAI model does not support image analysis. Please choose a vision-capable model (e.g. grok-2-vision-1212) in Settings.`,
       );
     }
 
@@ -56,7 +55,7 @@ class XAIService {
     const messages = [
       {
         role: "system",
-        content: `You are a vinyl record identification expert specialising in pressing identification. Analyse record images and extract all visible information with special attention to first press vs reissue identification.
+        content: `You are a vinyl record identification expert specializing in pressing identification. Analyse record images and extract all visible information with special attention to first press vs reissue identification.
 
 CRITICAL - Pressing Identification Rules:
 1. DEADWAX/MATRIX ANALYSIS IS ESSENTIAL - Look for (capture Side A and Side B separately whenever possible):

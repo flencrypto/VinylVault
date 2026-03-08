@@ -601,7 +601,7 @@ function resolveOCRProvider() {
     return {
       provider: "openai",
       fallbackReason: window.xaiService?.isConfigured
-        ? `xAI model "${xaiModel}" does not support image analysis.`
+        ? `xAI model "${xaiModel}" does not support image analysis. Please select "grok-2-vision-1212" in Settings.`
         : "xAI API key not configured.",
     };
   }
