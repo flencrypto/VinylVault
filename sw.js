@@ -13,6 +13,7 @@ const CACHE_VERSION = 'vinylvault-v2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/vinyl.html',
   '/deals.html',
   '/collection.html',
   '/settings.html',
@@ -37,7 +38,7 @@ const PRECACHE_URLS = [
   '/components/ebay-service.js',
   '/components/collection-service.js',
   '/components/ai-chat.js',
-  '/components/deepseek-service.js',
+  '/components/xai-service.js',
   '/components/enhanced-ocr-service.js',
   '/components/ocr-service.js',
   '/components/pricecharting-service.js',

@@ -7,6 +7,8 @@ class VinylNav extends HTMLElement {
     const currentPath = window.location.pathname;
     const isActive = (href) => {
       const page = href.replace(/^.*\//, "");
+      // vinyl.html is a sub-page of collection
+      if (page === "collection.html" && (currentPath.endsWith("vinyl.html"))) return true;
       return currentPath.endsWith(page) || (page === "index.html" && (currentPath === "/" || currentPath.endsWith("/")));
     };
     const linkClass = (href) =>
@@ -23,9 +25,11 @@ class VinylNav extends HTMLElement {
           left: 0;
           right: 0;
           z-index: 50;
-          background: rgba(14, 12, 11, 0.96);
-          backdrop-filter: blur(12px);
-          border-bottom: 1px solid #2e2924;
+          background: rgba(14, 12, 11, 0.97);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-bottom: 1px solid rgba(200,151,63,0.15);
+          box-shadow: 0 1px 24px rgba(0,0,0,0.5), 0 0 0 0.5px rgba(200,151,63,0.08);
         }
         .nav-container {
           max-width: 1280px;
@@ -91,6 +95,7 @@ class VinylNav extends HTMLElement {
           color: #f5ede2;
           border-bottom: 2px solid #c8973f;
           padding-bottom: 2px;
+          text-shadow: 0 0 12px rgba(200,151,63,0.4);
         }
         .nav-link.primary {
           color: #c8973f;

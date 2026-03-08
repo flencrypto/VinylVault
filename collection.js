@@ -1006,6 +1006,9 @@ function renderCollection() {
                             <button onclick="viewRecordDetail(${originalIdx})" class="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-all" title="View Details">
                                 <i data-feather="eye" class="w-4 h-4"></i>
                             </button>
+                            <a href="vinyl.html?idx=${originalIdx}" class="p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all" title="Full Page Details">
+                                <i data-feather="maximize-2" class="w-4 h-4"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1238,6 +1241,9 @@ ${
             <button onclick="closeRecordModal()" class="text-gray-400 hover:text-white">
                 <i data-feather="x" class="w-6 h-6"></i>
             </button>
+            <a href="vinyl.html?idx=${index}" class="ml-2 text-gray-400 hover:text-primary" title="Open full page">
+                <i data-feather="maximize-2" class="w-5 h-5"></i>
+            </a>
         </div>
         <div class="p-6 overflow-y-auto max-h-[70vh]">
             <div class="grid md:grid-cols-2 gap-6">
