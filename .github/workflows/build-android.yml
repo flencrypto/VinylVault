@@ -9,6 +9,10 @@ on:
       - '.github/workflows/build-android.yml'
   workflow_dispatch:
 
+concurrency:
+  group: build-android-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   # SDK versions — update here when targeting a new API level
   ANDROID_API_LEVEL: "34"
@@ -44,7 +48,7 @@ jobs:
             "platforms;android-${{ env.ANDROID_API_LEVEL }}" \
             "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
             "platform-tools"
-          echo "yes" | sdkmanager --licenses
+          yes | sdkmanager --licenses
 
       - name: Grant gradlew execute permission
         run: chmod +x android/gradlew
@@ -124,6 +128,8 @@ jobs:
       # ── Update releases/ folder ──────────────────────────────────────────────
       - name: Commit updated release APK to releases/
         if: steps.check-secrets.outputs.available == 'true'
+        env:
+          TWA_SHA256_CERT: ${{ secrets.TWA_SHA256_CERT }}
         run: |
           VERSION=$(cd android && ./gradlew -q properties --no-daemon | awk '/^versionName:/ {print $2; exit}')
           cp android/app/build/outputs/apk/release/app-release.apk "releases/VinylVault-${VERSION}-release.apk"

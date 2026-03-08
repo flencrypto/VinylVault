@@ -35,9 +35,9 @@ whenever Android sources change on `main`. It can also be triggered manually.
 
 | Condition | Result |
 |-----------|--------|
-| Any push to `main` (android/** changed) | Builds a **debug APK**, uploads as artifact |
-| Push to `main` + all 5 signing secrets set | Also builds and signs a **release APK + AAB**, uploads as artifact, and commits updated APK to `releases/` |
-| `workflow_dispatch` (manual trigger) | Same as above |
+| Any push to `main` that changes `android/**`, `/.well-known/assetlinks.json`, or `.github/workflows/build-android.yml` | Builds a **debug APK**, uploads as artifact |
+| Push to `main` with the above path changes **and** all 5 signing secrets set | Also builds and signs a **release APK + AAB**, uploads as artifact, and commits updated APK to `releases/` |
+| `workflow_dispatch` (manual trigger from the Actions tab) | Builds a **debug APK**, and if all 5 signing secrets are set, also builds and signs a **release APK + AAB**, uploads as artifacts, and commits updated APK to `releases/` |
 
 ### Required GitHub Secrets (for release builds)
 
@@ -45,7 +45,7 @@ Navigate to **GitHub → Repository → Settings → Secrets and variables → A
 
 | Secret name | Value |
 |-------------|-------|
-| `KEYSTORE_BASE64` | Base64-encoded release keystore: `base64 -i release.keystore` |
+| `KEYSTORE_BASE64` | Base64-encoded release keystore. macOS: `base64 -i release.keystore`<br>Linux/CI: `base64 -w 0 release.keystore` |
 | `KEYSTORE_PASSWORD` | Keystore store password |
 | `KEY_ALIAS` | Key alias (default: `vinylvault`) |
 | `KEY_PASSWORD` | Key password |
