@@ -26,6 +26,36 @@ To install it directly on an Android phone:
 
 ---
 
+## Automated CI Builds (GitHub Actions)
+
+The workflow `.github/workflows/build-android.yml` automatically rebuilds the APK
+whenever Android sources change on `main`. It can also be triggered manually.
+
+### What the workflow does
+
+| Condition | Result |
+|-----------|--------|
+| Any push to `main` (android/** changed) | Builds a **debug APK**, uploads as artifact |
+| Push to `main` + all 5 signing secrets set | Also builds and signs a **release APK + AAB**, uploads as artifact, and commits updated APK to `releases/` |
+| `workflow_dispatch` (manual trigger) | Same as above |
+
+### Required GitHub Secrets (for release builds)
+
+Navigate to **GitHub → Repository → Settings → Secrets and variables → Actions** and add:
+
+| Secret name | Value |
+|-------------|-------|
+| `KEYSTORE_BASE64` | Base64-encoded release keystore: `base64 -i release.keystore` |
+| `KEYSTORE_PASSWORD` | Keystore store password |
+| `KEY_ALIAS` | Key alias (default: `vinylvault`) |
+| `KEY_PASSWORD` | Key password |
+| `TWA_SHA256_CERT` | SHA-256 fingerprint matching `/.well-known/assetlinks.json` |
+
+If any of these secrets are missing the workflow skips the release build and only
+produces the debug APK. A workflow notice is emitted to explain the skip.
+
+---
+
 ## Building from Source
 
 ### Prerequisites

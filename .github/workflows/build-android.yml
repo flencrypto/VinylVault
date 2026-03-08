@@ -1,0 +1,137 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.well-known/assetlinks.json'
+      - '.github/workflows/build-android.yml'
+  workflow_dispatch:
+
+env:
+  # SDK versions — update here when targeting a new API level
+  ANDROID_API_LEVEL: "34"
+  ANDROID_BUILD_TOOLS: "34.0.0"
+  # Public TWA SHA-256 fingerprint (matches /.well-known/assetlinks.json).
+  # This is a public certificate hash — safe to embed here per Android TWA spec.
+  TWA_FINGERPRINT_PUBLIC: "EC:B8:A6:5C:CF:7D:DC:6A:8A:69:4C:B3:3D:FF:23:42:C8:7D:FB:D1:22:C9:A4:16:C0:A7:18:00:F9:EE:B0:2D"
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required Android SDK components
+        run: |
+          sdkmanager --install \
+            "platforms;android-${{ env.ANDROID_API_LEVEL }}" \
+            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
+            "platform-tools"
+          echo "yes" | sdkmanager --licenses
+
+      - name: Grant gradlew execute permission
+        run: chmod +x android/gradlew
+
+      # ── Debug build ──────────────────────────────────────────────────────────
+      # Always runs. TWA_FINGERPRINT_PUBLIC is the public cert hash from
+      # assetlinks.json — it is safe and required to be public per TWA spec.
+      - name: Build debug APK
+        working-directory: android
+        env:
+          TWA_SHA256_CERT: ${{ env.TWA_FINGERPRINT_PUBLIC }}
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: VinylVault-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
+
+      # ── Release build ────────────────────────────────────────────────────────
+      # Only runs when all signing secrets are present. Store these in
+      # GitHub → Settings → Secrets and variables → Actions:
+      #   KEYSTORE_BASE64    base64-encoded release.keystore file
+      #   KEYSTORE_PASSWORD  keystore store password
+      #   KEY_ALIAS          key alias (default: vinylvault)
+      #   KEY_PASSWORD       key password
+      #   TWA_SHA256_CERT    SHA-256 cert fingerprint matching assetlinks.json
+      - name: Check release signing secrets
+        id: check-secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          TWA_SHA256_CERT: ${{ secrets.TWA_SHA256_CERT }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && \
+             [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ] && [ -n "$TWA_SHA256_CERT" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release signing secrets not configured — skipping release build. See ANDROID_BUILD.md."
+          fi
+
+      - name: Decode release keystore
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          mkdir -p android/keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/keystore/release.keystore
+
+      - name: Build release APK and App Bundle
+        if: steps.check-secrets.outputs.available == 'true'
+        working-directory: android
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/android/keystore/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          TWA_SHA256_CERT: ${{ secrets.TWA_SHA256_CERT }}
+        run: ./gradlew assembleRelease bundleRelease --no-daemon
+
+      - name: Clean up release keystore
+        if: always()
+        run: rm -f android/keystore/release.keystore
+
+      - name: Upload release APK and AAB
+        if: steps.check-secrets.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: VinylVault-release-${{ github.sha }}
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      # ── Update releases/ folder ──────────────────────────────────────────────
+      - name: Commit updated release APK to releases/
+        if: steps.check-secrets.outputs.available == 'true'
+        run: |
+          VERSION=$(cd android && ./gradlew -q properties --no-daemon | awk '/^versionName:/ {print $2; exit}')
+          cp android/app/build/outputs/apk/release/app-release.apk "releases/VinylVault-${VERSION}-release.apk"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add releases/
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(android): rebuild release APK v${VERSION} [skip ci]"
+            git pull --rebase origin main
+            git push origin main
+          fi
