@@ -587,7 +587,7 @@ function getAIService() {
 function resolveOCRProvider() {
   const preferredProvider = localStorage.getItem("ai_provider") || "openai";
   const xaiModel =
-    localStorage.getItem("xai_model") || "grok-2-vision-1212";
+    localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
   const canUseXAIVision =
     preferredProvider === "xai" &&
     window.xaiService?.isConfigured &&
@@ -601,7 +601,7 @@ function resolveOCRProvider() {
     return {
       provider: "openai",
       fallbackReason: window.xaiService?.isConfigured
-        ? `xAI model "${xaiModel}" does not support image analysis. Please select "grok-2-vision-1212" in Settings.`
+        ? `xAI model "${xaiModel}" does not support image analysis. Please select "grok-4-1-fast-reasoning" in Settings.`
         : "xAI API key not configured.",
     };
   }
@@ -693,7 +693,7 @@ async function analyzePhotosWithOCR() {
       if (!apiKey) throw new Error("xAI API key not configured");
       window.xaiService.updateApiKey(apiKey);
       window.xaiService.updateModel(
-        localStorage.getItem("xai_model") || "grok-2-vision-1212",
+        localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
       );
     }
 
@@ -2005,7 +2005,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -3446,7 +3446,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -4376,7 +4376,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -5415,7 +5415,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -6421,7 +6421,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -6885,7 +6885,7 @@ async function analyzeCollectionPhotosWithOCR(photos) {
       if (!apiKey) throw new Error("xAI API key not configured");
       window.xaiService.updateApiKey(apiKey);
       window.xaiService.updateModel(
-        localStorage.getItem("xai_model") || "grok-2-vision-1212",
+        localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
       );
     }
 
@@ -7760,7 +7760,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -8807,7 +8807,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -9988,7 +9988,7 @@ async function callAI(messages, temperature = 0.7) {
             Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("xai_model") || "grok-2-vision-1212",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,

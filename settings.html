@@ -317,8 +317,8 @@
                 class="w-full px-4 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
                 aria-label="xAI model"
               >
-                <option value="grok-2-vision-1212">Grok 2 Vision (Recommended)</option>
-                <option value="grok-2-1212">Grok 2 (Chat)</option>
+                <option value="grok-4-1-fast-reasoning">Grok 4.1 Fast Reasoning (Recommended)</option>
+                <option value="grok-4">Grok 4</option>
                 <option value="grok-3-mini-beta">Grok 3 Mini Beta</option>
               </select>
             </div>
@@ -849,7 +849,7 @@
         const maxTokens = localStorage.getItem("openai_max_tokens") || "2000";
         const xaiKey = localStorage.getItem("xai_api_key");
         const xaiModel =
-          localStorage.getItem("xai_model") || "grok-2-vision-1212";
+          localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
 
         // Set default Discogs token if not already configured
         let discogsToken = localStorage.getItem("discogs_token");
