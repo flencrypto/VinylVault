@@ -60,6 +60,7 @@
         });
       }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
   </head>
   <body class="bg-surface text-gray-100 min-h-screen">
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -118,6 +119,12 @@
             </button>
           </div>
         </div>
+      </section>
+
+      <!-- Market Price Trends -->
+      <section class="mb-8">
+        <h2 class="text-2xl font-semibold mb-4">Market Price Trends</h2>
+        <price-trend-chart current-price="85"></price-trend-chart>
       </section>
 
       <!-- Quick Deal Calculator -->
@@ -731,6 +738,7 @@
     <script src="components/vinyl-nav.js"></script>
     <script src="components/vinyl-footer.js"></script>
     <script src="components/stat-card.js"></script>
+    <script src="components/price-trend-chart.js"></script>
     <script src="components/discogs-service.js"></script>
     <script src="components/ebay-service.js"></script>
     <script src="components/telegram-service.js"></script>

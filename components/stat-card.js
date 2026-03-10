@@ -1,159 +1,131 @@
+// components/stat-card.js — animated counter + mini sparkline
 class StatCard extends HTMLElement {
   static get observedAttributes() {
-    return ["icon", "label", "value", "trend"];
+    return ['value', 'label', 'icon', 'trend'];
+  }
+
+  // Feather-icon SVG paths for icons used across the app
+  static get _ICONS() {
+    return {
+      'disc': '<circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle>',
+      'trending-up': '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>',
+      'percent': '<line x1="19" y1="5" x2="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle>',
+      'dollar-sign': '<line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>',
+      'trending-down': '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>',
+      'activity': '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>',
+      'check-circle': '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>',
+    };
+  }
+
+  constructor() {
+    super();
+    this.value = 0;
+    this._animTimer = null;
+    this._decimals = 0;
   }
 
   connectedCallback() {
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
-    }
-    this.render();
+    this._updateValue();
+    this._render();
   }
 
   attributeChangedCallback() {
-    this.render();
-  }
-
-  render() {
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
+    if (this.isConnected) {
+      this._updateValue();
+      this._render();
     }
-
-    const icon = this.getAttribute("icon") || "activity";
-    const label = this.getAttribute("label") || "Stat";
-    const value = this.getAttribute("value") || "-";
-    const trend = this.getAttribute("trend") || "";
-
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-        }
-        .card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 12px;
-          padding: 1.25rem;
-          transition: all 0.2s ease;
-        }
-        .card:hover {
-          border-color: #7c3aed;
-        }
-        .header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 0.75rem;
-        }
-        .icon-wrapper {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #7c3aed20 0%, #06b6d420 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #7c3aed;
-        }
-        .trend {
-          font-size: 0.75rem;
-          font-weight: 500;
-          padding: 0.25rem 0.625rem;
-          border-radius: 9999px;
-          background: #22c55e20;
-          color: #22c55e;
-        }
-        .trend.neutral {
-          background: #64748b20;
-          color: #94a3b8;
-        }
-        .label {
-          font-size: 0.875rem;
-          color: #94a3b8;
-          margin-bottom: 0.25rem;
-        }
-        .value {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #f1f5f9;
-        }
-        .sparkline {
-          height: 48px;
-          background: linear-gradient(90deg, transparent, var(--vf-accent, #e8c06a), transparent);
-          opacity: 0.15;
-          margin-top: 12px;
-          border-radius: 8px;
-        }
-      </style>
-      <div class="card">
-        <div class="header">
-          <div class="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              ${this.getIconPath(icon)}
-            </svg>
-          </div>
-          <span class="trend ${trend.includes("+") ? "" : "neutral"}">${trend}</span>
-        </div>
-        <p class="label">${label}</p>
-        <p class="value">${value}</p>
-        <div class="sparkline" aria-hidden="true"></div>
-      </div>
-    `;
-    this.animateCounter();
   }
 
   disconnectedCallback() {
-    cancelAnimationFrame(this._animFrame);
-    this._animFrame = null;
+    if (this._animTimer !== null) {
+      clearInterval(this._animTimer);
+      this._animTimer = null;
+    }
   }
 
-  animateCounter() {
-    cancelAnimationFrame(this._animFrame);
-    this._animFrame = null;
-    const counter = this.shadowRoot.querySelector(".value");
-    const raw = this.getAttribute("value") || "";
-    // Extract optional non-numeric prefix, numeric portion, and optional suffix
-    const match = raw.match(/^([^0-9]*)([0-9,]+(?:\.[0-9]*)?)(.*)$/);
-    if (!match) return;
-    const prefix = match[1];
-    const numStr = match[2].replace(/,/g, "");
-    const suffix = match[3];
-    const target = parseFloat(numStr);
-    if (isNaN(target) || target === 0) return;
-    const isFloat = numStr.includes(".");
-    const decimals = isFloat ? (numStr.split(".")[1] || "").length : 0;
+  _updateValue() {
+    const raw = this.getAttribute('value') || '0';
+    const numeric = raw.replace(/[^0-9.\-]/g, '');
+    this.value = parseFloat(numeric) || 0;
+    // Preserve decimal places from the source value
+    const decMatch = numeric.match(/\.(\d+)/);
+    this._decimals = decMatch ? decMatch[1].length : 0;
+  }
+
+  _renderIcon() {
+    const name = this.getAttribute('icon') || '';
+    const paths = StatCard._ICONS[name];
+    if (paths) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" style="color:var(--vf-accent-light);"
+        aria-hidden="true">${paths}</svg>`;
+    }
+    // Fallback: render the name as text (handles "pound-sign" → "£" etc.)
+    const FALLBACK = { 'pound-sign': '£', 'euro-sign': '€' };
+    return `<span style="font-size:1.6rem; color:var(--vf-accent-light);">${FALLBACK[name] || name}</span>`;
+  }
+
+  _render() {
+    if (this._animTimer !== null) {
+      clearInterval(this._animTimer);
+      this._animTimer = null;
+    }
+    const trend = this.getAttribute('trend') || '';
+    this.innerHTML = `
+      <div class="card stat-card">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div>
+            <div style="font-size:0.95rem; color:var(--vf-text-muted); text-transform:uppercase; letter-spacing:0.5px;">${this.getAttribute('label') || ''}</div>
+            <div class="stat-value" data-counter>0</div>
+            ${trend ? `<div style="font-size:0.8rem; color:var(--vf-text-muted); margin-top:2px;">${trend}</div>` : ''}
+          </div>
+          <div style="opacity:0.5; margin-top:2px;">${this._renderIcon()}</div>
+        </div>
+        <!-- Mini sparkline (CSS only) -->
+        <div aria-hidden="true" style="height:48px; background:linear-gradient(90deg, transparent, var(--vf-accent-light), transparent); opacity:0.15; margin-top:12px; border-radius:8px;"></div>
+      </div>
+    `;
+    this._animateCounter();
+  }
+
+  _formatNum(n) {
+    if (this._decimals > 0) {
+      return n.toFixed(this._decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    // toLocaleString handles negative sign correctly (e.g. -42 → "-42")
+    return Math.floor(n).toLocaleString();
+  }
+
+  _animateCounter() {
+    const counter = this.querySelector('[data-counter]');
+    if (!counter) return;
+    const raw = this.getAttribute('value') || '0';
+    // Extract leading prefix (e.g. "£", "+") — require at least one non-digit/non-sign char
+    const prefixMatch = raw.match(/^([^\d\-+]+)/);
+    const suffixMatch = raw.match(/([^\d.]+)$/);
+    const prefix = prefixMatch ? prefixMatch[1] : '';
+    const suffix = suffixMatch ? suffixMatch[1] : '';
+    const target = this.value;
     const duration = 1200;
-    let startTime = null;
-    const frame = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = Math.min(timestamp - startTime, duration);
-      const progress = elapsed / duration;
-      const current = target * progress;
-      const display = isFloat
-        ? current.toFixed(decimals)
-        : Math.floor(current).toLocaleString();
-      counter.textContent = prefix + display + suffix;
-      if (elapsed < duration) {
-        this._animFrame = requestAnimationFrame(frame);
-      }
-    };
-    this._animFrame = requestAnimationFrame(frame);
-  }
 
-  getIconPath(name) {
-    const icons = {
-      "check-circle":
-        '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-      "trending-up":
-        '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-      clock:
-        '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-      activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-      "dollar-sign":
-        '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-    };
-    return icons[name] || icons["activity"];
+    // Direction-aware animation: works for both positive and negative targets
+    const absTarget = Math.abs(target);
+    const sign = target < 0 ? -1 : 1;
+    const absIncrement = absTarget / (duration / 16);
+    let absProgress = 0;
+
+    this._animTimer = setInterval(() => {
+      absProgress += absIncrement;
+      if (absProgress >= absTarget) {
+        absProgress = absTarget;
+        clearInterval(this._animTimer);
+        this._animTimer = null;
+      }
+      const current = sign * absProgress;
+      counter.textContent = prefix + this._formatNum(current) + suffix;
+    }, 16);
   }
 }
 
-customElements.define("stat-card", StatCard);
+customElements.define('stat-card', StatCard);
