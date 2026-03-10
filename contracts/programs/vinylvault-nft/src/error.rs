@@ -10,7 +10,7 @@ pub enum VinylVaultError {
     #[msg("You are not authorised to perform this action")]
     Unauthorised,
 
-    /// The mint account provided does not match the certificate's stored mint.
-    #[msg("Mint does not match the certificate")]
-    MintMismatch,
+    /// The asset account provided does not match the certificate's stored asset.
+    #[msg("Asset does not match the certificate")]
+    AssetMismatch,
 }
