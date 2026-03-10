@@ -59,6 +59,11 @@ jobs:
       # ── Debug build ──────────────────────────────────────────────────────────
       # Always runs. TWA_FINGERPRINT_PUBLIC is the public cert hash from
       # assetlinks.json — it is safe and required to be public per TWA spec.
+      # The debug build type has no applicationIdSuffix, so the package name
+      # is "pro.vinylvault.app" (matching assetlinks.json). However, full TWA
+      # mode requires the signing certificate fingerprint to also match — debug
+      # APKs are signed with the Android debug key and will still show the Chrome
+      # address bar. A release-signed APK is needed for the full-screen experience.
       - name: Build debug APK
         working-directory: android
         env:
@@ -129,18 +134,32 @@ jobs:
           retention-days: 90
 
       # ── Update releases/ folder ──────────────────────────────────────────────
-      - name: Commit updated release APK to releases/
-        if: steps.check-secrets.outputs.available == 'true' && github.ref == 'refs/heads/main'
-        env:
-          TWA_SHA256_CERT: ${{ secrets.TWA_SHA256_CERT }}
+      # When release signing secrets are available, commit the signed release APK.
+      # Otherwise, commit the debug APK (signed with the Android debug key and the
+      # correct public TWA fingerprint) so releases/ always has an installable APK.
+      - name: Commit APK to releases/
+        if: github.ref == 'refs/heads/main'
         run: |
           VERSION=$(cd android && ./gradlew -q properties --no-daemon | awk '/^versionName:/ {print $2; exit}')
-          cp android/app/build/outputs/apk/release/app-release.apk "releases/VinylVault-${VERSION}-release.apk"
+          if [ "${{ steps.check-secrets.outputs.available }}" = "true" ]; then
+            APK_SRC="android/app/build/outputs/apk/release/app-release.apk"
+            APK_DST="releases/VinylVault-${VERSION}-release.apk"
+            COMMIT_MSG="chore(android): rebuild release APK v${VERSION} [skip ci]"
+          else
+            # The filename deliberately uses the -release.apk suffix so that the
+            # download links in README.md stay valid. The commit message notes that
+            # this is debug-signed; once signing secrets are configured the CI will
+            # replace it with the production-signed release APK.
+            APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
+            APK_DST="releases/VinylVault-${VERSION}-release.apk"
+            COMMIT_MSG="chore(android): rebuild APK v${VERSION} (debug-signed, pending release key) [skip ci]"
+          fi
+          cp "$APK_SRC" "$APK_DST"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add releases/
           if ! git diff --staged --quiet; then
-            git commit -m "chore(android): rebuild release APK v${VERSION} [skip ci]"
+            git commit -m "$COMMIT_MSG"
             git pull --rebase origin main
             git push origin main
           fi

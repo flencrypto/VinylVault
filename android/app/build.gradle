@@ -14,15 +14,14 @@ android {
         versionName "1.0.0"
 
         // TWA host URL — update to your production Netlify URL
-        // SHA-256 fingerprint: set via Gradle property (-PTWA_SHA256_CERT=...) or env var TWA_SHA256_CERT
-        def twaSha256Cert = project.findProperty("TWA_SHA256_CERT") ?: System.getenv("TWA_SHA256_CERT")
-        if (!twaSha256Cert) {
-            throw new GradleException(
-                "Trusted Web Activity SHA-256 fingerprint not configured.\n" +
-                "Set Gradle property 'TWA_SHA256_CERT' or environment variable 'TWA_SHA256_CERT'\n" +
-                "to match your /.well-known/assetlinks.json. See ANDROID_BUILD.md Step 2b."
-            )
-        }
+        // SHA-256 fingerprint: set via Gradle property (-PTWA_SHA256_CERT=...) or env var TWA_SHA256_CERT.
+        // Falls back to the known public release-cert fingerprint (matches /.well-known/assetlinks.json).
+        // This public hash is safe to embed — only the private signing key must be kept secret.
+        // ⚠ If you rotate the signing certificate, update BOTH this fallback value AND
+        //   /.well-known/assetlinks.json so TWA verification keeps working.
+        def twaSha256Cert = project.findProperty("TWA_SHA256_CERT")
+            ?: System.getenv("TWA_SHA256_CERT")
+            ?: "EC:B8:A6:5C:CF:7D:DC:6A:8A:69:4C:B3:3D:FF:23:42:C8:7D:FB:D1:22:C9:A4:16:C0:A7:18:00:F9:EE:B0:2D"
         def assetStatements = '[{ "relation": ["delegate_permission/common.handle_all_urls"], ' +
             '"target": { "namespace": "android_app", "package_name": "pro.vinylvault.app", ' +
             '"sha256_cert_fingerprints": ["' + twaSha256Cert + '"] } }]'
@@ -53,8 +52,12 @@ android {
             signingConfig signingConfigs.release
         }
         debug {
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
+            // No applicationIdSuffix — keeps package name "pro.vinylvault.app" to fix the
+            // package mismatch with assetlinks.json. Note: full TWA mode (no address bar)
+            // also requires the signing certificate fingerprint to match assetlinks.json,
+            // so debug APKs (signed with the Android debug key) will still show the Chrome
+            // address bar. A release-signed APK whose cert fingerprint matches assetlinks.json
+            // is required for the full-screen TWA experience.
         }
     }
 
