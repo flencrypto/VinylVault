@@ -77,6 +77,13 @@ class StatCard extends HTMLElement {
           font-weight: 700;
           color: #f1f5f9;
         }
+        .sparkline {
+          height: 48px;
+          background: linear-gradient(90deg, transparent, var(--vf-accent, #e8c06a), transparent);
+          opacity: 0.15;
+          margin-top: 12px;
+          border-radius: 8px;
+        }
       </style>
       <div class="card">
         <div class="header">
@@ -89,8 +96,40 @@ class StatCard extends HTMLElement {
         </div>
         <p class="label">${label}</p>
         <p class="value">${value}</p>
+        <div class="sparkline" aria-hidden="true"></div>
       </div>
     `;
+    this.animateCounter();
+  }
+
+  animateCounter() {
+    this._animTimer && clearInterval(this._animTimer);
+    const counter = this.shadowRoot.querySelector(".value");
+    const raw = this.getAttribute("value") || "";
+    // Extract optional non-numeric prefix, numeric portion, and optional suffix
+    const match = raw.match(/^([^0-9]*)([0-9,]+(?:\.[0-9]*)?)(.*)$/);
+    if (!match) return;
+    const prefix = match[1];
+    const numStr = match[2].replace(/,/g, "");
+    const suffix = match[3];
+    const target = parseFloat(numStr);
+    if (isNaN(target) || target === 0) return;
+    const isFloat = numStr.includes(".");
+    const decimals = isFloat ? (numStr.split(".")[1] || "").length : 0;
+    const duration = 1200;
+    const increment = target / (duration / 16);
+    let start = 0;
+    this._animTimer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        start = target;
+        clearInterval(this._animTimer);
+      }
+      const display = isFloat
+        ? start.toFixed(decimals)
+        : Math.floor(start).toLocaleString();
+      counter.textContent = prefix + display + suffix;
+    }, 16);
   }
 
   getIconPath(name) {
