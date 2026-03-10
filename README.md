@@ -251,7 +251,7 @@ Quick start:
 ```bash
 cd v2
 pnpm install
-cp .env.example .env.local   # then fill in your API keys
+cp ../.env.example .env.local   # then fill in your API keys
 pnpm run dev
 # then visit http://localhost:3000
 ```
@@ -265,8 +265,8 @@ Required API keys are documented in **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KE
 | **Discogs** | Collection import, pressing comps, Variant Resolver | `DISCOGS_USER_TOKEN` |
 | **eBay** | Sold-listing comps, listing preview generator | `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` |
 | **OpenAI** | OCR for label/runout photos, barcode + AI pressing ID | `OPENAI_API_KEY` |
-| **xAI (Grok)** | Second-opinion AI, cross-validation confidence | `XAI_API_KEY` |
-| **Telegram** | Notifications | `TELEGRAM_BOT_TOKEN` |
+| **xAI (Grok)** | Second-opinion AI, cross-validation confidence | `XAI_API_KEY` + `OPENAI_API_KEY` (both required) |
+| **Telegram** | Notifications (v1 only) | Configured via Settings UI — stored in `localStorage` as `telegram_bot_token` + `telegram_chat_id` |
 | **Solana** | NFT minting for rare pressings | Wallet keypair |
 
 All keys for the v1 app are entered via **Settings** and stored in `localStorage`.  

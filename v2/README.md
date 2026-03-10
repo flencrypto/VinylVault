@@ -38,8 +38,7 @@ cd v2
 pnpm install
 
 # 3. Set up environment variables
-cp .env.example .env.local   # create from template if it exists
-# — or create v2/.env.local manually and add your API keys (see below)
+cp ../.env.example .env.local   # copy template from repo root, then fill in your API keys
 
 # 4. Start the development server
 pnpm run dev
@@ -77,7 +76,8 @@ EBAY_ACCESS_TOKEN=...
 # OpenAI — OCR for label/runout photos, barcode + AI pressing identification
 OPENAI_API_KEY=sk-...
 
-# xAI (Grok) — second-opinion AI, cross-validation confidence
+# xAI (Grok) — second-opinion AI, cross-validates OpenAI results
+# NOTE: OPENAI_API_KEY must also be set — xAI supplements OpenAI, it does not replace it.
 XAI_API_KEY=xai-...
 ```
 
@@ -93,7 +93,7 @@ When a key is missing, the app shows a modal dialog with:
 - A link to the official developer portal.
 - A link to the `/setup` page.
 
-The `GET /api/setup/status` endpoint returns which integrations are configured as JSON booleans — it never exposes secret values.
+The `GET /api/setup/status` endpoint returns an object per integration with `configured` (boolean) and `missingVars` (array of unset env var names) — it never exposes secret values.
 
 ---
 
