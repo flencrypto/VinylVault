@@ -11,9 +11,23 @@
   --vf-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+/* Scope transitions to interactive/animated elements only */
+button, .btn, .card, .vinyl-card, a, input, select, textarea,
+.toast, dialog, vinyl-nav, progress {
   transition: var(--vf-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button, .btn, .card, .vinyl-card, a, input, select, textarea,
+  .toast, dialog, vinyl-nav, progress {
+    transition: none;
+  }
 }
 
 body {
@@ -34,6 +48,58 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+/* Skip navigation — accessibility */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--vf-accent);
+  color: #0e0c0b;
+  padding: 0.5rem 1rem;
+  z-index: 9999;
+  border-radius: 0 0 8px 0;
+  font-weight: 600;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  padding: 1rem 1.5rem;
+  background: rgba(26, 23, 21, 0.95);
+  border: 1px solid rgba(232, 192, 106, 0.2);
+  border-radius: var(--vf-radius);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), var(--vf-glow);
+  z-index: 10000;
+  transform: translateY(100px);
+  opacity: 0;
+  max-width: 400px;
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast.success {
+  border-color: #4ade80;
+}
+
+.toast.error {
+  border-color: #ef4444;
+}
+
+.toast.warning {
+  border-color: var(--vf-accent);
+}
+
 /* Glassmorphic cards — the new standard */
 .card, .stat-card, dialog {
   background: var(--vf-surface-2);
@@ -44,8 +110,8 @@ h1, h2, h3 {
   padding: 24px;
 }
 
-/* Premium buttons */
-button, .btn {
+/* Premium CTA buttons — opt-in via .btn class only */
+.btn {
   background: linear-gradient(145deg, var(--vf-accent), #b37a2a);
   color: #0e0c0b;
   font-weight: 700;
@@ -57,9 +123,10 @@ button, .btn {
   cursor: pointer;
 }
 
-button:hover, .btn:hover {
+.btn:hover {
   transform: translateY(-3px) scale(1.03);
   box-shadow: 0 0 40px rgba(200,151,63,0.6);
+  filter: brightness(1.1);
 }
 
 /* Navigation & layout polish */
@@ -70,7 +137,7 @@ vinyl-nav {
 }
 
 /* Collection grid — high-end masonry feel */
-#collection-grid {
+#collectionGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
@@ -85,6 +152,7 @@ vinyl-nav {
 .vinyl-card:hover {
   transform: scale(1.04) rotate(1deg);
   box-shadow: var(--vf-glow);
+  filter: brightness(1.05);
 }
 
 .vinyl-card img {
@@ -93,6 +161,11 @@ vinyl-nav {
 
 .vinyl-card:hover img {
   transform: scale(1.12) rotate(3deg); /* vinyl spin illusion */
+}
+
+/* Cards: subtle hover brightness */
+.card:hover {
+  filter: brightness(1.04);
 }
 
 /* Stat cards — animated counters + sparkline */
@@ -124,9 +197,4 @@ progress {
   accent-color: var(--vf-accent);
   height: 6px;
   border-radius: 9999px;
-}
-
-/* Global hover glow for interactive elements */
-*:hover {
-  filter: brightness(1.05);
 }
