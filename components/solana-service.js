@@ -317,31 +317,34 @@ class VinylSolanaService extends HTMLElement {
           color: #f5ede2;
           transition: background 0.15s, border-color 0.15s;
           white-space: nowrap;
+          font-family: inherit;
+          line-height: 1;
+          appearance: none;
+          -webkit-appearance: none;
         }
         .pill:hover { background: rgba(200,151,63,0.15); border-color: rgba(200,151,63,0.4); }
+        .pill:focus-visible { outline: 2px solid #c8973f; outline-offset: 2px; }
         .dot {
           width: 7px;
           height: 7px;
           border-radius: 50%;
           background: ${connected ? "#22c55e" : (available ? "#f59e0b" : "#6b7280")};
           flex-shrink: 0;
-          /* Accessible: the dot is decorative; status is also conveyed in text */
-          aria-hidden: true;
         }
         .addr { color: #c8973f; }
         .net  { color: #9ca3af; font-size: 0.72rem; }
       </style>
       ${
         connected
-          ? `<div class="pill" id="solPill" title="Click to disconnect" aria-label="Solana wallet connected: ${shortAddr} on ${network}">
+          ? `<button class="pill" id="solPill" type="button" title="Click to disconnect" aria-label="Solana wallet connected: ${shortAddr} on ${network}">
                <span class="dot" aria-hidden="true"></span>
                <span class="addr">◎ ${shortAddr}</span>
                <span class="net">${network}</span>
-             </div>`
-          : `<div class="pill" id="solPill" title="${available ? "Connect Solana wallet" : "Install Phantom or Backpack"}" aria-label="${available ? "Connect Solana wallet" : "No Solana wallet detected"}">
+             </button>`
+          : `<button class="pill" id="solPill" type="button" title="${available ? "Connect Solana wallet" : "Install Phantom or Backpack"}" aria-label="${available ? "Connect Solana wallet" : "No Solana wallet detected"}">
                <span class="dot" aria-hidden="true"></span>
                <span>${available ? "Connect Solana" : "No wallet"}</span>
-             </div>`
+             </button>`
       }
     `;
 
