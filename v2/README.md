@@ -93,7 +93,18 @@ When a key is missing, the app shows a modal dialog with:
 - A link to the official developer portal.
 - A link to the `/setup` page.
 
-The `GET /api/setup/status` endpoint returns an object per integration with `configured` (boolean) and `missingVars` (array of unset env var names) — it never exposes secret values.
+The `GET /api/setup/status` endpoint returns a JSON object with a top-level `integrations` key. Each value is a per-integration object with `configured` (boolean) and `missingVars` (array of unset env var names) — it never exposes secret values.
+
+```json
+{
+  "integrations": {
+    "discogs":  { "id": "discogs",  "configured": true,  "missingVars": [] },
+    "ebay":     { "id": "ebay",     "configured": false, "missingVars": ["EBAY_CLIENT_ID", "EBAY_CLIENT_SECRET"] },
+    "openai":   { "id": "openai",   "configured": false, "missingVars": ["OPENAI_API_KEY"] },
+    "xai":      { "id": "xai",      "configured": false, "missingVars": ["XAI_API_KEY", "OPENAI_API_KEY"] }
+  }
+}
+```
 
 ---
 
