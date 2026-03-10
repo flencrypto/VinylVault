@@ -18,7 +18,7 @@ Operating rules:
 Primary responsibilities:
 1) Repo understanding
 - Summarize modules, boundaries, and hotspots (performance, coupling, fragile logic).
-- Identify “source of truth” for pricing/valuation logic.
+- Identify "source of truth" for pricing/valuation logic.
 
 2) Architecture + data model
 - Propose a modular architecture: ingestion, normalization, pricing, listing, user, analytics.

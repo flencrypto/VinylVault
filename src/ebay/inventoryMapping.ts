@@ -84,6 +84,8 @@ export type VinylVaultRecord = {
   country?: string;
   genre?: string;
   condition?: string;
+  /** Matrix / run-out groove number identifying the pressing. */
+  matrixNumber?: string;
   /** Barcode / EAN scanned from record sleeve. */
   barcode?: string;
   /** Publicly accessible URLs of uploaded photos. */
@@ -112,6 +114,7 @@ export function toExternalProduct(
   if (record.country) aspects.push({ name: "Country/Region of Manufacture", values: [record.country] });
   if (record.genre) aspects.push({ name: "Genre", values: [record.genre] });
   if (record.condition) aspects.push({ name: "Condition", values: [record.condition] });
+  if (record.matrixNumber) aspects.push({ name: "Matrix Number", values: [record.matrixNumber] });
 
   const titleParts = [record.artist, record.title, record.year, record.format]
     .filter(Boolean)
