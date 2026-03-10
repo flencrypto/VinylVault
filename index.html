@@ -372,6 +372,18 @@
               >
                 <!-- Dynamically populated -->
               </div>
+              <!-- Crop-before-analyse action (shown after photos are uploaded) -->
+              <div id="cropAnalyseRow" class="hidden mt-3 flex gap-2">
+                <button
+                  id="cropAnalyseBtn"
+                  onclick="cropFirstThenAnalyse()"
+                  class="flex-1 px-3 py-2 bg-surface border border-gray-600 rounded-lg text-sm text-gray-300 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2"
+                  aria-label="Crop the primary photo then analyse with AI"
+                >
+                  <i data-feather="crop" class="w-4 h-4"></i>
+                  Crop Image, then Analyse
+                </button>
+              </div>
               <!-- Upload Progress -->
               <div id="uploadProgress" class="hidden mt-4">
                 <div class="flex items-center justify-between mb-2">

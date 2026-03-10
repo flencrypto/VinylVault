@@ -41,6 +41,7 @@ const PRECACHE_URLS = [
   '/components/xai-service.js',
   '/components/enhanced-ocr-service.js',
   '/components/ocr-service.js',
+  '/components/tesseract-ocr-service.js',
   '/components/pricecharting-service.js',
   '/components/stat-card.js',
   '/components/telegram-service.js',

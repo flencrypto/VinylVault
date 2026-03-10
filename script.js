@@ -784,6 +784,53 @@ async function analyzePhotosWithOCR() {
     }, 300);
   }
 }
+
+/**
+ * Show the OCR crop modal for the first uploaded photo, then run the normal
+ * AI OCR analysis on the (optionally cropped) result.
+ * Registered on the "Crop Image, then Analyse" button.
+ */
+async function cropFirstThenAnalyse() {
+  if (uploadedPhotos.length === 0) {
+    showToast("Upload at least one photo first", "error");
+    return;
+  }
+
+  if (!window.ocrService || typeof window.ocrService.showCropModal !== "function") {
+    showToast("Crop feature not available", "error");
+    return;
+  }
+
+  const btn = document.getElementById("cropAnalyseBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Opening crop UI…"; }
+
+  try {
+    // Show crop modal for the primary image; user may confirm, skip, or cancel
+    const croppedOrOriginal = await window.ocrService.showCropModal(uploadedPhotos[0]);
+
+    // Replace the first entry in uploadedPhotos with the (possibly) cropped blob
+    if (croppedOrOriginal !== uploadedPhotos[0]) {
+      // User confirmed a crop — wrap blob in a File-like object for consistency
+      const croppedFile = new File(
+        [croppedOrOriginal],
+        uploadedPhotos[0].name || "cropped.jpg",
+        { type: croppedOrOriginal.type || "image/jpeg" },
+      );
+      uploadedPhotos[0] = croppedFile;
+      renderPhotoGrid();
+    }
+
+    // Now run the normal AI analysis with the (cropped) photos
+    await analyzePhotosWithOCR();
+  } catch (err) {
+    if (err.message !== "Crop cancelled by user") {
+      console.error("Crop-then-analyse error:", err);
+      showToast(`Error: ${err.message}`, "error");
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-feather="crop" class="w-4 h-4"></i> Crop Image, then Analyse'; if (typeof feather !== "undefined") feather.replace(); }
+  }
+}
 function populateFieldsFromDiscogs(discogsData) {
   if (!discogsData) return;
 
@@ -1216,6 +1263,9 @@ async function applyDiscogsCorrectionFromUrl(url, currentDetection = {}) {
 function renderPhotoGrid() {
   if (uploadedPhotos.length === 0 && hostedPhotoUrls.length === 0) {
     photoGrid.classList.add("hidden");
+    // Hide crop button too
+    const cropRow = document.getElementById("cropAnalyseRow");
+    if (cropRow) cropRow.classList.add("hidden");
     // Revoke all object URLs when clearing grid
     photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
     photoObjectUrls = [];
@@ -1227,6 +1277,17 @@ function renderPhotoGrid() {
   photoObjectUrls = [];
 
   photoGrid.classList.remove("hidden");
+
+  // Show/hide the crop-before-analyse button based on whether there are local photos
+  const cropRow = document.getElementById("cropAnalyseRow");
+  if (cropRow) {
+    if (uploadedPhotos.length > 0) {
+      cropRow.classList.remove("hidden");
+      if (typeof feather !== "undefined") feather.replace();
+    } else {
+      cropRow.classList.add("hidden");
+    }
+  }
 
   // Render locally uploaded photos (File objects)
   const uploadedHtml = uploadedPhotos
