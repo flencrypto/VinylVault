@@ -17,7 +17,7 @@ The application runs entirely client-side as a static PWA today, with a roadmap 
 
 ## Target Users
 
- User type | Description |
+| User type | Description |
 |---|---|
 | **Casual collector-sellers** | Vinyl enthusiasts who periodically sell duplicates or upgrades on eBay and want a fast, accurate listing workflow without specialist knowledge. |
 | **Professional record dealers** | High-volume eBay sellers who need to process dozens of records per session and rely on consistent, well-formatted listings and competitive pricing data. |

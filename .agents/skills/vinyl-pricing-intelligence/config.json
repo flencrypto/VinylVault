@@ -1,0 +1,33 @@
+{
+  "name": "vinyl-pricing-intelligence",
+  "version": "1.0.0",
+  "description": "Intelligent pricing analysis for vinyl records",
+  "dependencies": [
+    "requests",
+    "python3"
+  ],
+  "required_apis": [
+    "discogs",
+    "xai"
+  ],
+  "default_settings": {
+    "confidence_threshold": 0.7,
+    "arbitrage_threshold": 0.7,
+    "max_historical_comparisons": 10
+  },
+  "analysis_factors": [
+    "condition_grading",
+    "historical_prices", 
+    "market_trends",
+    "ai_insights",
+    "regional_differences",
+    "seasonal_factors"
+  ],
+  "output_metrics": [
+    "recommended_price",
+    "price_range",
+    "market_trend",
+    "confidence_score",
+    "arbitrage_opportunity"
+  ]
+}
