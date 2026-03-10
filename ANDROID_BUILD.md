@@ -22,12 +22,17 @@ A signed release APK is available at:
 releases/VinylVault-1.0.0-release.apk
 ```
 
-To install it directly on an Android phone:
-1. Copy the APK to your device (USB, Google Drive, email, etc.)
-2. On the phone: **Settings → Security → Install unknown apps** → enable for your file manager
-3. Tap the `.apk` file → Install
-4. **VinylVault** will appear on your home screen
-5. After installation, **disable "Install unknown apps"** again to maintain device security
+To install it directly on an Android phone, see the full step-by-step guide in
+**[README.md — Android APK (sideload)](README.md#-android-apk-sideload--alternative-to-pwa)**.
+
+Quick reference:
+
+1. Get the APK onto the device — browser download, USB transfer, cloud storage, or `adb install`.
+2. **Android 8+:** When prompted tap **Settings → Allow from this source** (per-app, not global).  
+   **Android 7 and earlier:** **Settings → Security → Unknown sources → ON**.
+3. Tap the `.apk` file → **Install**.
+4. **VinylVault** appears on the home screen with the gold vinyl record icon.
+5. **Android 7 and earlier only:** Return to **Settings → Security** and turn **Unknown sources** back off.
 
 > ⚠️ Only install APKs from sources you trust. Always verify the file is from the
 > official VinylVault repository before installing.
@@ -308,12 +313,28 @@ manifestPlaceholders = [
 
 ## Installing on a Phone (Sideload)
 
-1. On your Android phone go to **Settings → Security → Install unknown apps**
-   and enable it for Files (or your file manager).
-2. Copy `app-release.apk` to your phone (USB, email, Google Drive, etc.).
-3. Tap the APK file on your phone → Install.
+**Android 8.0 and later (most phones):**
 
-The app will appear on your home screen as **VinylVault** with the gold vinyl
+1. Copy `app-release.apk` to your phone (USB, email, Google Drive, etc.).
+2. Tap the APK file in your **Files** / **Downloads** app.
+3. Android will show: *"Your phone is not allowed to install unknown apps from this source."*  
+   Tap **Settings** → toggle **Allow from this source** → tap the back arrow.
+4. Tap **Install**.
+
+**Android 7 and earlier:**
+
+1. Open **Settings → Security** → toggle **Unknown sources** on and confirm.
+2. Copy `app-release.apk` to your phone.
+3. Tap the APK file → **Install**.
+4. After installation, go back to **Settings → Security** and turn **Unknown sources** off again.
+
+**Via ADB (skip the unknown-sources permission entirely):**
+
+```bash
+adb install app/build/outputs/apk/release/app-release.apk
+```
+
+The app will appear on the home screen as **VinylVault** with the gold vinyl
 record icon.
 
 ---

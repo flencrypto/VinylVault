@@ -97,15 +97,76 @@ Firefox does not currently support PWA installation on desktop. Use Chrome, Edge
 
 A signed release APK is available for Android devices if you prefer a native install from outside the Play Store.
 
-**Install the pre-built APK:**
+#### Step 1 — Get the APK onto your phone
 
-1. Download the latest signed APK from the [Releases](releases/latest) page of this repository.
-2. On your Android device go to **Settings → Security → Install unknown apps** and enable it for your file manager.
-3. Open the downloaded `.apk` file and tap **Install**.
-4. VinylVault will appear on your home screen.
-5. After installation, **disable "Install unknown apps"** again to maintain device security.
+Choose whichever method is easiest:
 
-> ⚠️ Only install APKs from sources you trust. Always verify the file is from the official VinylVault repository.
+**Option A — Download directly on your phone (simplest)**
+
+1. On your Android phone open Chrome (or any browser).
+2. Navigate to the [latest release APK](https://github.com/flencrypto/VinylVault/raw/main/releases/VinylVault-1.0.0-release.apk) — the download starts automatically.
+3. The APK will land in your **Downloads** folder.
+
+**Option B — Transfer from your computer**
+
+1. Download [`VinylVault-1.0.0-release.apk`](https://github.com/flencrypto/VinylVault/raw/main/releases/VinylVault-1.0.0-release.apk) to your computer.
+2. Copy it to your phone using one of:
+   - **USB cable** — connect the phone, switch to **File Transfer (MTP)** mode, and copy the APK to the phone's storage.
+   - **Google Drive / Dropbox** — upload on your computer, open the Drive/Dropbox app on your phone, and tap **Download**.
+   - **Email** — attach the APK to an email and open it on your phone.
+
+**Option C — ADB (developers)**
+
+```bash
+adb install releases/VinylVault-1.0.0-release.apk
+```
+
+If using ADB, skip Steps 2 and 3 — ADB installs directly and does not require "Install unknown apps".
+
+---
+
+#### Step 2 — Enable "Install unknown apps"
+
+The exact steps depend on your Android version:
+
+**Android 8.0 and later (most phones)**
+
+Android 8+ grants install permission per browser or file manager — not globally.
+
+1. When you tap the APK (or the browser shows a download-complete prompt), Android will ask:
+   > **"Your phone is not allowed to install unknown apps from this source"**
+2. Tap **Settings** in that dialog.
+3. Toggle **Allow from this source** on.
+4. Tap the back arrow to return and proceed with the install.
+
+   — *or* —
+
+   Go to **Settings → Apps** (or **Applications**) → tap the app you downloaded with (e.g. **Chrome** or **Files**) → **Install unknown apps** → toggle **Allow from this source**.
+
+**Android 7 and earlier**
+
+1. Open **Settings → Security** (or **Settings → Lock screen and security**).
+2. Toggle **Unknown sources** on.
+3. Tap **OK** on the warning dialog.
+
+---
+
+#### Step 3 — Install and launch
+
+1. Open your **Files** app (or **Downloads** folder) and tap `VinylVault-1.0.0-release.apk`.
+2. Tap **Install** in the confirmation screen.
+3. Tap **Done** (or **Open** to launch immediately).
+4. **VinylVault** will appear on your home screen with the gold vinyl record icon.
+
+> ⚠️ Only install APKs from sources you trust. Always verify the file is from the official VinylVault repository before installing.
+
+#### Step 4 — Re-secure your device (Android 7 and earlier only)
+
+If you enabled **Unknown sources** globally in Step 2, go back to **Settings → Security** and turn it off again to keep your device protected.
+
+On Android 8 and later the per-app permission is automatically restricted after install — no action needed.
+
+---
 
 For developer instructions (building from source, signing, and publishing to Google Play) see **[ANDROID_BUILD.md](ANDROID_BUILD.md)**.
 
