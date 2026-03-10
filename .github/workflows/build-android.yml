@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - 'android/**'
       - '.well-known/assetlinks.json'
@@ -32,7 +32,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Set up JDK 17
@@ -138,7 +138,7 @@ jobs:
       # Otherwise, commit the debug APK (signed with the Android debug key and the
       # correct public TWA fingerprint) so releases/ always has an installable APK.
       - name: Commit APK to releases/
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/master'
         run: |
           VERSION=$(cd android && ./gradlew -q properties --no-daemon | awk '/^versionName:/ {print $2; exit}')
           if [ "${{ steps.check-secrets.outputs.available }}" = "true" ]; then
@@ -160,6 +160,6 @@ jobs:
           git add releases/
           if ! git diff --staged --quiet; then
             git commit -m "$COMMIT_MSG"
-            git pull --rebase origin main
-            git push origin main
+            git pull --rebase origin master
+            git push origin master
           fi
