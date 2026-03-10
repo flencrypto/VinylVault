@@ -5,6 +5,16 @@ let currentVerifyIndex = 0;
 let verifyPhotos = [];
 let _filterDebounceTimer = null;
 
+/** Escape a string for safe interpolation into HTML attribute or text content. */
+function escHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
   loadCollection();
@@ -2202,10 +2212,10 @@ function showOCRExtractionPanel(index, ocrData) {
   const fieldsHtml = fields.length > 0
     ? fields.map((f) => `
         <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1e293b;cursor:pointer">
-          <input type="checkbox" name="ocrField" data-key="${f.key}" data-value="${String(f.value).replace(/"/g, "&quot;")}" checked
+          <input type="checkbox" name="ocrField" data-key="${escHtml(f.key)}" data-value="${escHtml(String(f.value))}" checked
             style="accent-color:#c8973f;width:16px;height:16px">
-          <span style="color:#94a3b8;font-size:0.8em;min-width:70px">${f.label}:</span>
-          <span style="color:#e2e8f0;font-size:0.85em">${f.value}</span>
+          <span style="color:#94a3b8;font-size:0.8em;min-width:70px">${escHtml(f.label)}:</span>
+          <span style="color:#e2e8f0;font-size:0.85em">${escHtml(String(f.value))}</span>
         </label>`).join("")
     : `<p style="color:#f59e0b;font-size:0.85em;padding:8px 0">OCR could not extract structured fields from these images. Try clearer photos of the label or sleeve.</p>`;
 
@@ -2250,7 +2260,13 @@ function applyOCRFields(index) {
     const key = cb.dataset.key;
     const value = cb.dataset.value;
     if (key && value !== undefined) {
-      record[key] = key === "year" ? (parseInt(value, 10) || value) : value;
+      if (key === "year") {
+        const parsed = parseInt(value, 10);
+        // Only store if it's a plausible vinyl era year; otherwise skip
+        record[key] = parsed >= 1900 && parsed <= 2100 ? parsed : null;
+      } else {
+        record[key] = value;
+      }
     }
   });
 

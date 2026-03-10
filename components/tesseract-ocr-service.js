@@ -305,7 +305,6 @@ class TesseractOCRService {
       "Pye",
       "Fontana",
       "Immediate",
-      "Bronze",
       "Bronze Records",
       "Charisma",
       "Transatlantic",
@@ -319,7 +318,6 @@ class TesseractOCRService {
       "Tresor",
       "Haçienda",
       // Classics
-      "Deutsche Grammophon",
       "Decca Classics",
       "Archiv",
     ];
