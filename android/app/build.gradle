@@ -52,8 +52,12 @@ android {
             signingConfig signingConfigs.release
         }
         debug {
-            // No applicationIdSuffix — keeps package name "pro.vinylvault.app" so that
-            // TWA verification works against assetlinks.json for CI-produced debug APKs.
+            // No applicationIdSuffix — keeps package name "pro.vinylvault.app" to fix the
+            // package mismatch with assetlinks.json. Note: full TWA mode (no address bar)
+            // also requires the signing certificate fingerprint to match assetlinks.json,
+            // so debug APKs (signed with the Android debug key) will still show the Chrome
+            // address bar. A release-signed APK whose cert fingerprint matches assetlinks.json
+            // is required for the full-screen TWA experience.
         }
     }
 

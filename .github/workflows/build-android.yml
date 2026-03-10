@@ -60,7 +60,10 @@ jobs:
       # Always runs. TWA_FINGERPRINT_PUBLIC is the public cert hash from
       # assetlinks.json — it is safe and required to be public per TWA spec.
       # The debug build type has no applicationIdSuffix, so the package name
-      # is "pro.vinylvault.app" and TWA verification works against assetlinks.json.
+      # is "pro.vinylvault.app" (matching assetlinks.json). However, full TWA
+      # mode requires the signing certificate fingerprint to also match — debug
+      # APKs are signed with the Android debug key and will still show the Chrome
+      # address bar. A release-signed APK is needed for the full-screen experience.
       - name: Build debug APK
         working-directory: android
         env:
@@ -136,8 +139,6 @@ jobs:
       # correct public TWA fingerprint) so releases/ always has an installable APK.
       - name: Commit APK to releases/
         if: github.ref == 'refs/heads/main'
-        env:
-          TWA_SHA256_CERT: ${{ secrets.TWA_SHA256_CERT }}
         run: |
           VERSION=$(cd android && ./gradlew -q properties --no-daemon | awk '/^versionName:/ {print $2; exit}')
           if [ "${{ steps.check-secrets.outputs.available }}" = "true" ]; then
