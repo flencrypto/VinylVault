@@ -343,10 +343,10 @@ class AIChat extends HTMLElement {
         <div class="messages-area" id="messagesArea">
           <div class="message ai">
             👋 <strong>Hello!</strong> I'm your vinyl record AI assistant.<br><br>
-            📸 <strong>Upload photos</strong> of your record and I'll identify the artist, title, label, year, catalogue number, matrix, and more.<br><br>
+            📸 <strong>Upload photos</strong> of your record and I'll identify the artist, title, label, year, catalogue number, matrix, and more — including pressing intelligence.<br><br>
             ✏️ If anything looks wrong, use the quick buttons below or type a correction like <em>"the artist is Black Sabbath"</em>.<br><br>
             🔗 You can also <strong>paste a Discogs URL</strong> to fetch exact release details.<br><br>
-            📝 Say <em>"[term] on label"</em> (e.g. "Dr.Robert on label") to search the Discogs release notes for context, or <em>"add note: [text]"</em> to add a note directly to your listing.
+            💬 Or just <strong>ask me anything</strong> about vinyl pressings, values, or identifying records!
           </div>
         </div>
         
@@ -490,6 +490,23 @@ class AIChat extends HTMLElement {
 
     const messagesArea = this.shadowRoot.getElementById("messagesArea");
 
+    // Build pressing intelligence section if available
+    const hasPressingData = data.pressingType || data.matrixRunoutA || data.matrixRunoutB || data.conditionEstimate;
+    const pressingHtml = hasPressingData ? `
+      <div style="margin-top:10px;padding:10px;background:#0a1220;border-radius:6px;border:1px solid #1e3a5f;">
+        <div style="font-size:10px;color:#64748b;text-transform:uppercase;margin-bottom:6px;font-weight:500;">⚙️ Pressing Intelligence</div>
+        ${data.pressingType ? `<div style="font-size:11px;margin-bottom:4px;">
+          <span style="color:#64748b;">Type:</span>
+          <span style="color:${data.pressingType === "first_press" ? "#22c55e" : data.pressingType === "repress" ? "#f59e0b" : "#94a3b8"};font-weight:600;margin-left:4px;">${data.pressingType.replace("_", " ")}</span>
+          ${data.pressingConfidence ? `<span class="confidence-indicator confidence-${data.pressingConfidence}" style="margin-left:6px;">${data.pressingConfidence}</span>` : ""}
+        </div>` : ""}
+        ${data.matrixRunoutA ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Side A: <code style="color:#e2e8f0;font-size:10px;">${this.escapeHtml(data.matrixRunoutA)}</code></div>` : ""}
+        ${data.matrixRunoutB ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Side B: <code style="color:#e2e8f0;font-size:10px;">${this.escapeHtml(data.matrixRunoutB)}</code></div>` : ""}
+        ${data.conditionEstimate ? `<div style="font-size:11px;margin-top:4px;"><span style="color:#64748b;">Condition:</span> <span style="color:#e2e8f0;font-weight:600;">${this.escapeHtml(data.conditionEstimate)}</span></div>` : ""}
+        ${data.pressingEvidence && data.pressingEvidence.length > 0 ? `<div style="font-size:10px;color:#64748b;margin-top:6px;">${data.pressingEvidence.slice(0, 2).map((e) => `• ${this.escapeHtml(e)}`).join("<br>")}</div>` : ""}
+      </div>
+    ` : "";
+
     // Build detected fields display
     const fieldsHtml = `
       <div class="detected-fields">
@@ -508,6 +525,7 @@ class AIChat extends HTMLElement {
           ${this.renderField("Format", data.format)}
           ${this.renderField("Genre", data.genre)}
         </div>
+        ${pressingHtml}
         ${
           this.hasLearnedCorrections()
             ? `
@@ -527,12 +545,20 @@ class AIChat extends HTMLElement {
       I've analyzed your photos! Here's what I found:
       ${fieldsHtml}
       <p style="margin-top: 12px; font-size: 12px; color: #94a3b8;">
-        Please review these details. If anything looks wrong, click "Wrong [Field]" or type a correction like "The artist is actually..."
+        Please review these details. If anything looks wrong, click "Wrong [Field]" or type a correction like "The artist is actually…"
       </p>
     `;
 
     messagesArea.appendChild(messageDiv);
     messagesArea.scrollTop = messagesArea.scrollHeight;
+
+    // Record this in the message history but flag it so the AI fallback
+    // filter skips it (detection HTML blobs are not useful conversation context).
+    this.messages.push({
+      sender: "ai",
+      text: "I've analyzed your photos and found the record details.",
+      isDetectionResult: true,
+    });
 
     // Apply any learned corrections automatically
     this.applyLearnedCorrections(data);
@@ -854,22 +880,60 @@ class AIChat extends HTMLElement {
       return;
     }
 
-    // Generic fallback – let the user know what we can do
+    // Generic fallback — try the configured AI before showing static help
     this.showTyping();
-    setTimeout(() => {
-      this.hideTyping();
-      this.addMessage(
-        "I'm not sure how to interpret that. You can:<br>" +
-        "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
-        "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
-        "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
-        "• Paste a Discogs release URL to fetch the correct details<br>" +
-        "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
-        "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
-        "Or click <strong>✓ All Correct</strong> if everything looks good!",
-        "ai",
-      );
-    }, 800);
+    (async () => {
+      try {
+        // Include the last 6 message pairs for context (balances token cost vs. coherence).
+        const HISTORY_LIMIT = 6;
+        const historyMessages = this.messages
+          .slice(-HISTORY_LIMIT)
+          // Skip detection-result messages that are dense HTML blobs — not useful context for the AI.
+          .filter((m) => m.text && !m.isDetectionResult)
+          .map((m) => ({
+            role: m.sender === "user" ? "user" : "assistant",
+            content: m.text.replace(/<[^>]+>/g, " ").trim(),
+          }));
+
+        const aiMessages = [
+          { role: "system", content: this.buildSystemPrompt() },
+          ...historyMessages,
+          { role: "user", content: message },
+        ];
+
+        const reply = await this.callAI(aiMessages);
+        this.hideTyping();
+        if (reply) {
+          this.addMessage(reply, "ai");
+        } else {
+          this.addMessage(
+            "I'm not sure how to interpret that. You can:<br>" +
+            "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
+            "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
+            "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
+            "• Paste a Discogs release URL to fetch the correct details<br>" +
+            "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
+            "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
+            "Or click <strong>✓ All Correct</strong> if everything looks good!",
+            "ai",
+          );
+        }
+      } catch (err) {
+        console.warn("AI fallback call failed:", err);
+        this.hideTyping();
+        this.addMessage(
+          "I'm not sure how to interpret that. You can:<br>" +
+          "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
+          "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
+          "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
+          "• Paste a Discogs release URL to fetch the correct details<br>" +
+          "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
+          "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
+          "Or click <strong>✓ All Correct</strong> if everything looks good!",
+          "ai",
+        );
+      }
+    })();
   }
 
   /**
@@ -1002,7 +1066,102 @@ class AIChat extends HTMLElement {
     return extracted;
   }
 
-  /** Escape a string for safe insertion into innerHTML. */
+  /**
+   * Call the configured AI service with a set of messages.
+   * Returns the assistant reply string, or null if no AI is configured.
+   * Max tokens for chat replies — keeps responses concise and token-efficient.
+   */
+  async callAI(messages) {
+    const AI_CHAT_MAX_TOKENS = 400;
+    const provider = localStorage.getItem("ai_provider") || "openai";
+    const xaiKey = localStorage.getItem("xai_api_key");
+    const openaiKey = localStorage.getItem("openai_api_key");
+
+    if (provider === "xai" && xaiKey) {
+      const model =
+        localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
+      try {
+        const response = await fetch("https://api.x.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${xaiKey}`,
+          },
+          body: JSON.stringify({
+            model,
+            messages,
+            max_tokens: AI_CHAT_MAX_TOKENS,
+            temperature: 0.7,
+          }),
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return data.choices[0].message.content;
+        }
+        console.warn("xAI chat call returned", response.status);
+      } catch (err) {
+        console.warn("xAI chat call failed, falling through to OpenAI:", err);
+      }
+    }
+
+    if (openaiKey) {
+      const model = localStorage.getItem("openai_model") || "gpt-4o-mini";
+      try {
+        const response = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${openaiKey}`,
+            },
+            body: JSON.stringify({
+              model,
+              messages,
+              max_tokens: AI_CHAT_MAX_TOKENS,
+              temperature: 0.7,
+            }),
+          },
+        );
+        if (response.ok) {
+          const data = await response.json();
+          return data.choices[0].message.content;
+        }
+        console.warn("OpenAI chat call returned", response.status);
+      } catch (err) {
+        console.warn("OpenAI chat call failed:", err);
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Build the AI system prompt incorporating the current detection context.
+   */
+  buildSystemPrompt() {
+    const base =
+      "You are a knowledgeable vinyl record AI assistant embedded in a listing tool. " +
+      "Help users identify records, correct details, and answer questions about pressings, labels, " +
+      "matrix numbers, and record values. Keep replies concise (2–4 sentences).";
+    if (!this.currentDetection) return base;
+    const d = this.currentDetection;
+    const ctx = [
+      d.artist && `Artist: ${d.artist}`,
+      d.title && `Title: ${d.title}`,
+      d.year && `Year: ${d.year}`,
+      d.label && `Label: ${d.label}`,
+      d.catalogueNumber && `Cat#: ${d.catalogueNumber}`,
+      d.country && `Country: ${d.country}`,
+      d.pressingType && `Pressing: ${d.pressingType}`,
+      d.matrixRunoutA && `Matrix A: ${d.matrixRunoutA}`,
+      d.matrixRunoutB && `Matrix B: ${d.matrixRunoutB}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    return `${base} Current record context: ${ctx}.`;
+  }
+
   escapeHtml(str) {
     return String(str)
       .replace(/&/g, "&amp;")
@@ -1272,10 +1431,10 @@ class AIChat extends HTMLElement {
     messagesArea.innerHTML = `
       <div class="message ai">
         👋 <strong>Hello!</strong> I'm your vinyl record AI assistant.<br><br>
-        📸 <strong>Upload photos</strong> of your record and I'll identify the artist, title, label, year, catalogue number, matrix, and more.<br><br>
+        📸 <strong>Upload photos</strong> of your record and I'll identify the artist, title, label, year, catalogue number, matrix, and more — including pressing intelligence.<br><br>
         ✏️ If anything looks wrong, use the quick buttons below or type a correction like <em>"the artist is Black Sabbath"</em>.<br><br>
         🔗 You can also <strong>paste a Discogs URL</strong> to fetch exact release details.<br><br>
-        📝 Say <em>"[term] on label"</em> to search the Discogs release notes for context, or <em>"add note: [text]"</em> to add a note directly.
+        💬 Or just <strong>ask me anything</strong> about vinyl pressings, values, or identifying records!
       </div>
     `;
     this.setStatus("ready");
