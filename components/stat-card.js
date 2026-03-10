@@ -102,8 +102,14 @@ class StatCard extends HTMLElement {
     this.animateCounter();
   }
 
+  disconnectedCallback() {
+    cancelAnimationFrame(this._animFrame);
+    this._animFrame = null;
+  }
+
   animateCounter() {
-    this._animTimer && clearInterval(this._animTimer);
+    cancelAnimationFrame(this._animFrame);
+    this._animFrame = null;
     const counter = this.shadowRoot.querySelector(".value");
     const raw = this.getAttribute("value") || "";
     // Extract optional non-numeric prefix, numeric portion, and optional suffix
@@ -117,19 +123,21 @@ class StatCard extends HTMLElement {
     const isFloat = numStr.includes(".");
     const decimals = isFloat ? (numStr.split(".")[1] || "").length : 0;
     const duration = 1200;
-    const increment = target / (duration / 16);
-    let start = 0;
-    this._animTimer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        start = target;
-        clearInterval(this._animTimer);
-      }
+    let startTime = null;
+    const frame = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = Math.min(timestamp - startTime, duration);
+      const progress = elapsed / duration;
+      const current = target * progress;
       const display = isFloat
-        ? start.toFixed(decimals)
-        : Math.floor(start).toLocaleString();
+        ? current.toFixed(decimals)
+        : Math.floor(current).toLocaleString();
       counter.textContent = prefix + display + suffix;
-    }, 16);
+      if (elapsed < duration) {
+        this._animFrame = requestAnimationFrame(frame);
+      }
+    };
+    this._animFrame = requestAnimationFrame(frame);
   }
 
   getIconPath(name) {
