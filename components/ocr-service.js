@@ -31,7 +31,7 @@ class OCRService extends HTMLElement {
     this.cropCtx = null;
     this.isDragging = false;
     this.isResizing = false;
-    this.dragHandle = null;        // active handle: 'nw'|'ne'|'sw'|'se'|'n'|'e'|'s'|'w'
+    this._activeDragHandle = null; // handle locked for current drag/resize gesture
     this.startX = this.startY = 0;
     this.cropRect = null;          // { x, y, w, h }
     this.handleSize = 12;          // handle square side in px
@@ -43,6 +43,7 @@ class OCRService extends HTMLElement {
     this._cropReject = null;
     this._originalFile = null;
     this._hoverListenersAttached = false;
+    this._cancelListenerAttached = false;
 
     // OpenAI config
     this.apiKey = localStorage.getItem("openai_api_key");
@@ -193,6 +194,16 @@ class OCRService extends HTMLElement {
         document.body.appendChild(this.cropModal);
       }
 
+      // Native dialog cancel (Escape key) → resolve with original image so
+      // the caller's Promise never hangs.
+      if (!this._cancelListenerAttached) {
+        this.cropModal.addEventListener("cancel", (e) => {
+          e.preventDefault(); // stop the dialog closing by itself; _skipCrop closes it
+          this._skipCrop();
+        });
+        this._cancelListenerAttached = true;
+      }
+
       const img = new Image();
       const url = URL.createObjectURL(imageFile);
 
@@ -215,7 +226,7 @@ class OCRService extends HTMLElement {
         this.cropCtx.drawImage(img, 0, 0, width, height);
         this.originalImg = img; // stored for redrawCanvas()
         this.cropRect = null;
-        this.dragHandle = null;
+        this._activeDragHandle = null; // separate from hover handle
 
         this.cropModal.showModal();
       };
@@ -238,30 +249,34 @@ class OCRService extends HTMLElement {
       return;
     }
 
-    const off = document.createElement("canvas");
-    off.width = this.cropRect.w;
-    off.height = this.cropRect.h;
-    const ctx = off.getContext("2d");
-    // Draw directly from the original full-resolution image for best quality
+    // Scale factors from display canvas → original image resolution
     const scaleX = this.originalImg
       ? this.originalImg.naturalWidth / this.cropCanvas.width
       : 1;
     const scaleY = this.originalImg
       ? this.originalImg.naturalHeight / this.cropCanvas.height
       : 1;
+
+    // Source rectangle in full-resolution coordinates
+    const srcX = this.cropRect.x * scaleX;
+    const srcY = this.cropRect.y * scaleY;
+    const srcW = this.cropRect.w * scaleX;
+    const srcH = this.cropRect.h * scaleY;
+
+    // Offscreen canvas must be sized at full resolution so the export is lossless
+    const off = document.createElement("canvas");
+    off.width = Math.round(srcW);
+    off.height = Math.round(srcH);
+    const ctx = off.getContext("2d");
+
     if (this.originalImg) {
       ctx.drawImage(
         this.originalImg,
-        this.cropRect.x * scaleX,
-        this.cropRect.y * scaleY,
-        this.cropRect.w * scaleX,
-        this.cropRect.h * scaleY,
-        0,
-        0,
-        this.cropRect.w,
-        this.cropRect.h,
+        srcX, srcY, srcW, srcH,
+        0, 0, off.width, off.height,
       );
     } else {
+      // Fallback: draw from the display canvas (lower quality)
       ctx.drawImage(
         this.cropCanvas,
         this.cropRect.x,
@@ -270,13 +285,21 @@ class OCRService extends HTMLElement {
         this.cropRect.h,
         0,
         0,
-        this.cropRect.w,
-        this.cropRect.h,
+        off.width,
+        off.height,
       );
     }
 
     off.toBlob(
       (blob) => {
+        if (!blob) {
+          // Encoding failed — fall back to the original file rather than
+          // resolving with null, which would cause confusing downstream errors.
+          this.cropModal.close();
+          this.cropRect = null;
+          if (this._cropResolve) this._cropResolve(this._originalFile);
+          return;
+        }
         this.cropModal.close();
         this.cropRect = null;
         if (this._cropResolve) this._cropResolve(blob);
@@ -302,28 +325,31 @@ class OCRService extends HTMLElement {
   // ─── Mouse / touch event handlers ───────────────────────────────────────────
 
   handleMouseMove(e) {
-    if (!this.cropRect) return;
-
     const rect = this.cropCanvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Determine which handle (if any) is under the pointer
-    this.dragHandle = this.getHandleAt(mouseX, mouseY);
+    if (this.isResizing) {
+      // While resizing, keep using the handle chosen at mousedown
+      this.resizeCropRect(mouseX, mouseY);
+      this.redrawCanvas();
+      return;
+    }
 
-    if (this.dragHandle) {
-      this.cropCanvas.style.cursor = this.getCursorForHandle(this.dragHandle);
+    if (this.isDragging) {
+      this._doDrag(mouseX, mouseY);
+      return;
+    }
+
+    // No active operation — update cursor based on what's under the pointer
+    if (!this.cropRect) return;
+    const hoverHandle = this.getHandleAt(mouseX, mouseY);
+    if (hoverHandle) {
+      this.cropCanvas.style.cursor = this.getCursorForHandle(hoverHandle);
     } else if (this.isInsideCropRect(mouseX, mouseY)) {
       this.cropCanvas.style.cursor = "move";
     } else {
       this.cropCanvas.style.cursor = "crosshair";
-    }
-
-    if (this.isResizing) {
-      this.resizeCropRect(mouseX, mouseY);
-      this.redrawCanvas();
-    } else if (this.isDragging) {
-      this._doDrag(mouseX, mouseY);
     }
   }
 
@@ -332,9 +358,10 @@ class OCRService extends HTMLElement {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    this.dragHandle = this.getHandleAt(mouseX, mouseY);
+    // Lock in the active handle for the entire drag gesture
+    this._activeDragHandle = this.getHandleAt(mouseX, mouseY);
 
-    if (this.dragHandle) {
+    if (this._activeDragHandle) {
       // Start resize
       this.isResizing = true;
       this.isDragging = false;
@@ -348,20 +375,20 @@ class OCRService extends HTMLElement {
       // Start new crop rect
       this.isDragging = true;
       this.isResizing = false;
-      this.dragHandle = null;
+      this._activeDragHandle = null;
       this.startX = mouseX;
       this.startY = mouseY;
       this.cropRect = { x: mouseX, y: mouseY, w: 0, h: 0 };
     }
 
     this.cropCanvas.style.cursor =
-      this.getCursorForHandle(this.dragHandle) || "move";
+      this.getCursorForHandle(this._activeDragHandle) || "move";
   }
 
   endCropDrag() {
     this.isDragging = false;
     this.isResizing = false;
-    this.dragHandle = null;
+    this._activeDragHandle = null;
     this.cropCanvas.style.cursor = "crosshair";
 
     // Discard crop rects that are too small to be useful
@@ -381,7 +408,7 @@ class OCRService extends HTMLElement {
   _doDrag(mouseX, mouseY) {
     if (!this.cropRect) return;
 
-    if (this.dragHandle === null && this.startX !== undefined) {
+    if (this._activeDragHandle === null && this.startX !== undefined) {
       // Drawing a new rect
       const x = Math.min(mouseX, this.startX);
       const y = Math.min(mouseY, this.startY);
@@ -453,11 +480,11 @@ class OCRService extends HTMLElement {
   // ─── Resize ─────────────────────────────────────────────────────────────────
 
   resizeCropRect(currentX, currentY) {
-    if (!this.cropRect || !this.dragHandle) return;
+    if (!this.cropRect || !this._activeDragHandle) return;
 
     let { x, y, w, h } = this.cropRect;
 
-    switch (this.dragHandle) {
+    switch (this._activeDragHandle) {
       case "nw":
         w += x - currentX;
         x = currentX;
@@ -494,11 +521,8 @@ class OCRService extends HTMLElement {
         break;
     }
 
-    // Enforce minimum size
-    if (w < OCRService.MIN_CROP_W) w = OCRService.MIN_CROP_W;
-    if (h < OCRService.MIN_CROP_H) h = OCRService.MIN_CROP_H;
-
-    // Normalise negative dimensions
+    // 1. Normalise sign — if the user drags past the opposite edge, flip the
+    //    anchor so the rect always has positive w/h before we clamp.
     if (w < 0) {
       x += w;
       w = -w;
@@ -508,7 +532,11 @@ class OCRService extends HTMLElement {
       h = -h;
     }
 
-    // Clamp to canvas bounds
+    // 2. Enforce minimum size after normalisation so the anchor is stable.
+    if (w < OCRService.MIN_CROP_W) w = OCRService.MIN_CROP_W;
+    if (h < OCRService.MIN_CROP_H) h = OCRService.MIN_CROP_H;
+
+    // 3. Clamp to canvas bounds.
     x = Math.max(0, Math.min(x, this.cropCanvas.width - w));
     y = Math.max(0, Math.min(y, this.cropCanvas.height - h));
 

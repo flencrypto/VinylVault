@@ -2119,7 +2119,14 @@ async function runAILookupOnImages() {
       try {
         const tesseractResult = await window.tesseractOcrService.analyzeRecordImages(files);
         if (tesseractResult && tesseractResult.confidence !== "low") {
-          detection = { ...detection, ...tesseractResult };
+          // Merge only non-null/defined fields so existing detection values
+          // are not overwritten by null defaults from the Tesseract parser.
+          const filtered = Object.fromEntries(
+            Object.entries(tesseractResult).filter(
+              ([, v]) => v !== null && v !== undefined,
+            ),
+          );
+          detection = { ...detection, ...filtered };
         }
       } catch (e) {
         console.log("Tesseract OCR failed:", e.message);
