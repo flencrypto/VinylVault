@@ -266,7 +266,9 @@ export TWA_SHA256_CERT="AA:BB:CC:DD:EE:FF:..."   # same value as in assetlinks.j
 ```
 
 `build.gradle` reads `TWA_SHA256_CERT` (or Gradle property `-PTWA_SHA256_CERT=…`) and
-injects it into the APK manifest. The build will fail with a clear error if it is not set.
+injects it into the APK manifest. If neither is provided, it falls back to the known
+public release-cert fingerprint already in `assetlinks.json` — safe for local debug
+builds against the deployed site.
 
 > **Why both?** Android verifies TWA ownership by matching the fingerprint in
 > `assetlinks.json` (served by your website) against the fingerprint declared inside
@@ -363,7 +365,6 @@ Upload `app-release.aab` (not the APK) to the
 | Camera permission denied | Missing permission | `CAMERA` permission is declared in `AndroidManifest.xml`; Android 6+ requires runtime grant |
 | Install fails with "blocked by Play Protect" | App not from Play Store and Play Protect is strict | Temporarily disable Play Protect, install, then re-enable |
 | Back button exits the app unexpectedly | Not a real TWA (running in browser, not TWA mode) | Fix `assetlinks.json` — when TWA is verified, Chrome handles the back stack |
-| `TWA_SHA256_CERT is not configured` Gradle error | Env var not exported | `export TWA_SHA256_CERT="AA:BB:..."` before running Gradle |
 | PWABuilder score < 100 | Missing manifest fields or service worker | Ensure `manifest.json` has `name`, `short_name`, icons (192 + 512), `start_url`, `display: standalone`, `theme_color`, `background_color`; ensure `sw.js` is registered |
 
 ---
