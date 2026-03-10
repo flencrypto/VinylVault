@@ -483,9 +483,14 @@ async function identifyPhotoType(imageFile, service) {
   const name = imageFile.name.toLowerCase();
 
   // If we can use AI vision, do so
-  if (service && service.apiKey) {
+  const canUseVision =
+    service &&
+    service.apiKey &&
+    (!service.isVisionModel || service.isVisionModel(service.model));
+  if (canUseVision) {
     try {
       const base64 = await fileToBase64Clean(imageFile);
+      const mimeType = imageFile.type || "image/jpeg";
       const messages = [
         {
           role: "system",
@@ -514,7 +519,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64}`,
+                url: `data:${mimeType};base64,${base64}`,
                 detail: "low",
               },
             },
@@ -542,7 +547,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
       if (response.ok) {
         const data = await response.json();
         const content = data.choices[0].message.content;
-        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|([\s\S]*)/);
+        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})/);
         const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[2] : content;
         return JSON.parse(jsonStr.trim());
       }

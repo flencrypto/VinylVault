@@ -1968,14 +1968,41 @@ async function runAILookupOnImages() {
     let detection = { artist: record.artist, title: record.title, catalogueNumber: record.catalogueNumber, year: record.year, label: record.label, confidence: "low" };
 
     // Try AI OCR if configured
-    const apiKey = localStorage.getItem("openai_api_key") || localStorage.getItem("xai_api_key");
-    if (apiKey && typeof EnhancedOCRService !== "undefined") {
+    const aiProvider = localStorage.getItem("ai_provider") || "openai";
+    const xaiModel =
+      localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
+    const useXai =
+      aiProvider === "xai" &&
+      localStorage.getItem("xai_api_key") &&
+      typeof XAIService !== "undefined" &&
+      window.xaiService?.isVisionModel(xaiModel);
+    const apiKey = useXai
+      ? localStorage.getItem("xai_api_key")
+      : localStorage.getItem("openai_api_key");
+
+    if (apiKey) {
       try {
-        const ocrService = new EnhancedOCRService();
-        detection = await ocrService.analyzeRecordImages(files);
+        let ocrResult;
+        if (useXai) {
+          window.xaiService.updateApiKey(apiKey);
+          window.xaiService.updateModel(xaiModel);
+          ocrResult = await window.xaiService.analyzeRecordImages(files);
+        } else if (typeof EnhancedOCRService !== "undefined") {
+          const ocrService = new EnhancedOCRService();
+          ocrService.updateApiKey(apiKey);
+          ocrResult = await ocrService.analyzeRecordImages(files);
+        }
+        if (ocrResult) detection = ocrResult;
       } catch (e) {
         console.log("OCR failed, using record data:", e.message);
       }
+    } else if (aiProvider === "xai" && localStorage.getItem("xai_api_key")) {
+      // xAI is configured but the selected model is not vision-capable — inform the user
+      // instead of silently skipping OCR (which would leave fields unchanged).
+      showToast(
+        `The selected xAI model (${xaiModel}) cannot analyze images. Choose a vision-capable model (e.g. grok-4-1-fast-reasoning) in Settings.`,
+        "error",
+      );
     }
 
     // Search Discogs
