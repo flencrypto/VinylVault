@@ -1,0 +1,240 @@
+{
+  "address": "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS",
+  "metadata": {
+    "name": "vinylvault_nft",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "VinylVault on-chain record authentication and NFT minting program (Metaplex Core)"
+  },
+  "instructions": [
+    {
+      "name": "mint_record_nft",
+      "discriminator": [52, 200, 137, 194, 91, 73, 56, 222],
+      "docs": [
+        "Mint a new vinyl-record NFT certificate on-chain.",
+        "",
+        "Creates a Metaplex Core asset and stores the full record metadata in a",
+        "`RecordCertificate` PDA.  The asset is a true 1/1 NFT owned by the caller."
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": ["The wallet that is minting and paying for the certificate."],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "asset",
+          "docs": ["Freshly-generated Metaplex Core asset account (co-signed by the client)."],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "certificate",
+          "docs": ["PDA storing extended vinyl record metadata. Seeds: [\"record-cert\", asset]."],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [114, 101, 99, 111, 114, 100, 45, 99, 101, 114, 116] },
+              { "kind": "account", "path": "asset" }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "mpl_core_program",
+          "docs": ["Metaplex Core program."],
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        }
+      ],
+      "args": [
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "MintRecordArgs"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "revoke_certificate",
+      "discriminator": [143, 178, 16, 101, 159, 183, 212, 214],
+      "docs": [
+        "Revoke a previously minted certificate.",
+        "",
+        "Burns the Metaplex Core NFT asset and closes the `RecordCertificate` PDA,",
+        "returning all rent to the authority.  Only the original minter can call this."
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "docs": ["The original minter — must match `certificate.authority`."],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "asset",
+          "docs": ["The Metaplex Core asset to burn."],
+          "writable": true
+        },
+        {
+          "name": "certificate",
+          "docs": ["The RecordCertificate PDA to close. Rent returned to `authority`."],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [114, 101, 99, 111, 114, 100, 45, 99, 101, 114, 116] },
+              { "kind": "account", "path": "asset" }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "mpl_core_program",
+          "docs": ["Metaplex Core program."],
+          "address": "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "RecordCertificate",
+      "discriminator": [136, 95, 181, 205, 127, 192, 114, 109]
+    }
+  ],
+  "types": [
+    {
+      "name": "MintRecordArgs",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "token_id",
+            "docs": ["VinylVault off-chain token identifier (max 32 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "artist",
+            "docs": ["Artist name (max 128 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "docs": ["Album / record title (max 128 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "year",
+            "docs": ["Release year string, e.g. \"1972\" (max 16 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "catno",
+            "docs": ["Catalogue number (max 64 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "condition",
+            "docs": ["Grading condition, e.g. \"NM\" (max 32 bytes)."],
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": ["Optional URI to off-chain JSON metadata (max 200 bytes)."],
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RecordCertificate",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "docs": ["Wallet that minted this certificate and has revoke rights."],
+            "type": "publicKey"
+          },
+          {
+            "name": "asset",
+            "docs": ["Metaplex Core asset address for this NFT."],
+            "type": "publicKey"
+          },
+          {
+            "name": "token_id",
+            "docs": ["VinylVault off-chain token identifier (e.g. \"VX-A1B2-C3D4\")."],
+            "type": "string"
+          },
+          {
+            "name": "artist",
+            "docs": ["Artist name."],
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "docs": ["Album / record title."],
+            "type": "string"
+          },
+          {
+            "name": "year",
+            "docs": ["Release year string (e.g. \"1972\")."],
+            "type": "string"
+          },
+          {
+            "name": "catno",
+            "docs": ["Catalogue number."],
+            "type": "string"
+          },
+          {
+            "name": "condition",
+            "docs": ["Grading condition (e.g. \"NM\", \"VG+\")."],
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "docs": ["Optional URI pointing to off-chain JSON metadata."],
+            "type": "string"
+          },
+          {
+            "name": "minted_at",
+            "docs": ["Unix timestamp (seconds) when this certificate was minted."],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": ["PDA bump seed."],
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "StringTooLong",
+      "msg": "String field exceeds maximum length"
+    },
+    {
+      "code": 6001,
+      "name": "Unauthorised",
+      "msg": "You are not authorised to perform this action"
+    },
+    {
+      "code": 6002,
+      "name": "AssetMismatch",
+      "msg": "Asset does not match the certificate"
+    }
+  ]
+}

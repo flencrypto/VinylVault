@@ -1,12 +1,16 @@
 /**
- * VinylVault Solana Service
+ * VinylVault Solana Service — <vinyl-solana> custom element
  *
  * Handles Phantom / Backpack wallet connection and on-chain minting via the
- * VinylVault Anchor program deployed on Solana devnet / mainnet.
+ * VinylVault Anchor program (Metaplex Core) deployed on Solana devnet / mainnet.
  *
  * Dependencies: @solana/web3.js (loaded via CDN before this script).
  *
- * Usage:
+ * Usage (HTML):
+ *   <vinyl-solana></vinyl-solana>
+ *   <!-- The element renders a wallet-status pill and registers the service. -->
+ *
+ * Usage (JS):
  *   const info = await VinylVaultSolana.connectWallet();
  *   const result = await VinylVaultSolana.mintRecordNFT(tokenId, metadata);
  *
@@ -35,6 +39,12 @@ const VINYLVAULT_PROGRAM_ID = null; // TODO: set after `anchor deploy`
 /** Solana cluster to target.  Switch to "mainnet-beta" for production. */
 const SOLANA_NETWORK = "devnet";
 
+/**
+ * Metaplex Core program ID (same address on mainnet-beta and devnet).
+ * Source: https://developers.metaplex.com/core
+ */
+const MPL_CORE_PROGRAM_ID = "CoREENxT6tW1HoK8ypY1SxRMZTcVPm7R94rH4PZNhX7d";
+
 /* ------------------------------------------------------------------ */
 /*  Internal state                                                      */
 /* ------------------------------------------------------------------ */
@@ -54,6 +64,10 @@ const _solListeners = { accountChange: [] };
 function _notifySolAccountChange(account) {
   _solListeners.accountChange.forEach((cb) => {
     try { cb(account); } catch (_e) { /* ignore */ }
+  });
+  // Notify any mounted <vinyl-solana> elements so they re-render.
+  document.querySelectorAll("vinyl-solana").forEach((el) => {
+    if (typeof el._render === "function") el._render();
   });
 }
 
@@ -136,10 +150,15 @@ const VinylVaultSolana = {
   },
 
   /**
-   * Mint a vinyl-record certificate NFT via the VinylVault Anchor program.
+   * Mint a vinyl-record certificate NFT via the VinylVault Anchor program
+   * (Metaplex Core).
    *
    * Builds and signs a transaction that calls `mint_record_nft` on-chain.
    * The user must approve the transaction in their wallet extension.
+   *
+   * The Anchor program uses Metaplex Core (mpl-core) to create a lightweight
+   * 1/1 NFT asset and a companion RecordCertificate PDA holding detailed
+   * vinyl metadata.
    *
    * @param {string} tokenId  Off-chain VinylVault token ID (e.g. "VX-A1B2-C3D4").
    * @param {object} metadata Record metadata { artist, title, year, catno, condition }.
@@ -184,6 +203,7 @@ const VinylVaultSolana = {
     //   node -e "const c=require('crypto');console.log(JSON.stringify([...c.createHash('sha256').update('global:mint_record_nft').digest().slice(0,8)]))"
     const discriminator = new Uint8Array([52, 200, 137, 194, 91, 73, 56, 222]);
 
+    // MintRecordArgs fields (Borsh-encoded, same order as the Rust struct).
     const parts = [
       discriminator,
       ...encStr(tokenId),
@@ -199,52 +219,28 @@ const VinylVaultSolana = {
     let off = 0;
     for (const p of parts) { data.set(p, off); off += p.length; }
 
-    // Fresh keypair for the mint account (caller co-signs).
-    const mintKp = Keypair.generate();
+    // Fresh keypair for the Metaplex Core asset account (caller co-signs).
+    const assetKp = Keypair.generate();
     const programId = new PublicKey(VINYLVAULT_PROGRAM_ID);
     const authority = new PublicKey(_solState.account);
+    const mplCoreProgram = new PublicKey(MPL_CORE_PROGRAM_ID);
 
-    // Well-known Solana program addresses.
-    const TOKEN_PROGRAM_ID = new PublicKey(
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-    );
-    const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
-      "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-    );
-    const RENT_SYSVAR_ID = new PublicKey(
-      "SysvarRent111111111111111111111111111111111"
-    );
-
-    // Derive certificate PDA: seeds = ["record-cert", mint.key()].
+    // Derive certificate PDA: seeds = ["record-cert", asset.key()].
     const [certPda] = await PublicKey.findProgramAddress(
-      [Buffer.from("record-cert"), mintKp.publicKey.toBuffer()],
+      [Buffer.from("record-cert"), assetKp.publicKey.toBuffer()],
       programId
     );
 
-    // Derive the associated token account (ATA) for the authority and new mint.
-    const [tokenAccount] = await PublicKey.findProgramAddress(
-      [
-        authority.toBuffer(),
-        TOKEN_PROGRAM_ID.toBuffer(),
-        mintKp.publicKey.toBuffer(),
-      ],
-      ASSOCIATED_TOKEN_PROGRAM_ID
-    );
-
-    // Build a proper TransactionInstruction matching the Anchor MintRecordNft
-    // accounts struct order: authority, mint, token_account, certificate,
-    // system_program, token_program, associated_token_program, rent.
+    // Build TransactionInstruction matching the Anchor MintRecordNft accounts
+    // struct order: authority, asset, certificate, system_program, mpl_core_program.
     const instruction = new TransactionInstruction({
       programId,
       keys: [
-        { pubkey: authority,                    isSigner: true,  isWritable: true  },
-        { pubkey: mintKp.publicKey,             isSigner: true,  isWritable: true  },
-        { pubkey: tokenAccount,                 isSigner: false, isWritable: true  },
-        { pubkey: certPda,                      isSigner: false, isWritable: true  },
-        { pubkey: SystemProgram.programId,      isSigner: false, isWritable: false },
-        { pubkey: TOKEN_PROGRAM_ID,             isSigner: false, isWritable: false },
-        { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID,  isSigner: false, isWritable: false },
-        { pubkey: RENT_SYSVAR_ID,               isSigner: false, isWritable: false },
+        { pubkey: authority,              isSigner: true,  isWritable: true  },
+        { pubkey: assetKp.publicKey,      isSigner: true,  isWritable: true  },
+        { pubkey: certPda,                isSigner: false, isWritable: true  },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: mplCoreProgram,         isSigner: false, isWritable: false },
       ],
       data: Buffer.from(data),
     });
@@ -252,7 +248,7 @@ const VinylVaultSolana = {
     const { blockhash } = await _solState.connection.getLatestBlockhash();
     const tx = new Transaction({ recentBlockhash: blockhash, feePayer: authority });
     tx.add(instruction);
-    tx.partialSign(mintKp);
+    tx.partialSign(assetKp);
 
     const signedTx = await _solState.wallet.signTransaction(tx);
     const rawTx = signedTx.serialize();
@@ -280,4 +276,102 @@ const VinylVaultSolana = {
   shortAddress: (a) => (a ? a.slice(0, 4) + "…" + a.slice(-4) : ""),
 };
 
+/* ------------------------------------------------------------------ */
+/*  <vinyl-solana> custom element                                       */
+/*                                                                      */
+/*  Renders a compact wallet-status pill that can be placed anywhere    */
+/*  in the page.  Also registers window.VinylVaultSolana so that the   */
+/*  rest of the app (futuristic-features.js etc.) can call the API.    */
+/* ------------------------------------------------------------------ */
+
+class VinylSolanaService extends HTMLElement {
+  connectedCallback() {
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+    }
+    this._render();
+    // Expose the service globally (backward-compat with futuristic-features.js).
+    window.VinylVaultSolana = VinylVaultSolana;
+  }
+
+  _render() {
+    const connected = VinylVaultSolana.isConnected();
+    const shortAddr = VinylVaultSolana.getShortAddress();
+    const network   = VinylVaultSolana.getNetworkName();
+    const available = VinylVaultSolana.isWalletAvailable();
+
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host { display: inline-block; font-family: system-ui, sans-serif; }
+        .pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 5px 12px;
+          border-radius: 9999px;
+          font-size: 0.78rem;
+          font-weight: 500;
+          cursor: pointer;
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(14,12,11,0.85);
+          color: #f5ede2;
+          transition: background 0.15s, border-color 0.15s;
+          white-space: nowrap;
+          font-family: inherit;
+          line-height: 1;
+          appearance: none;
+          -webkit-appearance: none;
+        }
+        .pill:hover { background: rgba(200,151,63,0.15); border-color: rgba(200,151,63,0.4); }
+        .pill:focus-visible { outline: 2px solid #c8973f; outline-offset: 2px; }
+        .dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: ${connected ? "#22c55e" : (available ? "#f59e0b" : "#6b7280")};
+          flex-shrink: 0;
+        }
+        .addr { color: #c8973f; }
+        .net  { color: #9ca3af; font-size: 0.72rem; }
+      </style>
+      ${
+        connected
+          ? `<button class="pill" id="solPill" type="button" title="Click to disconnect" aria-label="Solana wallet connected: ${shortAddr} on ${network}">
+               <span class="dot" aria-hidden="true"></span>
+               <span class="addr">◎ ${shortAddr}</span>
+               <span class="net">${network}</span>
+             </button>`
+          : `<button class="pill" id="solPill" type="button" title="${available ? "Connect Solana wallet" : "Install Phantom or Backpack"}" aria-label="${available ? "Connect Solana wallet" : "No Solana wallet detected"}">
+               <span class="dot" aria-hidden="true"></span>
+               <span>${available ? "Connect Solana" : "No wallet"}</span>
+             </button>`
+      }
+    `;
+
+    const pill = this.shadowRoot.getElementById("solPill");
+    if (!pill) return;
+
+    pill.addEventListener("click", async () => {
+      if (connected) {
+        VinylVaultSolana.disconnectWallet();
+      } else if (available) {
+        pill.textContent = "Connecting…";
+        try {
+          await VinylVaultSolana.connectWallet();
+        } catch (err) {
+          this._render();
+          const msg = err && err.message ? err.message : String(err);
+          if (typeof showToast === "function") {
+            showToast(`Wallet error: ${msg.slice(0, 120)}`, "error");
+          }
+        }
+      }
+    });
+  }
+}
+
+customElements.define("vinyl-solana", VinylSolanaService);
+
+// Also expose via window immediately (before any <vinyl-solana> element mounts)
+// so that scripts loaded after this one can call VinylVaultSolana directly.
 window.VinylVaultSolana = VinylVaultSolana;

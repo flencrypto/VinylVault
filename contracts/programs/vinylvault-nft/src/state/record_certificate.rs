@@ -2,17 +2,17 @@ use anchor_lang::prelude::*;
 
 /// On-chain record-certificate account.
 ///
-/// Stored at PDA seeds = ["record-cert", mint.key()].
-/// The mint is a standard SPL token (decimals = 0, supply = 1) whose mint
-/// authority has been irrevocably removed — making it a 1/1 NFT.
+/// Stored at PDA seeds = ["record-cert", asset.key()].
+/// The asset is a Metaplex Core NFT whose ownership tracks the vinyl record
+/// certificate.  Burning the Core asset revokes the certificate.
 #[account]
 #[derive(InitSpace)]
 pub struct RecordCertificate {
     /// Wallet that minted this certificate and has revoke rights.
     pub authority: Pubkey, // 32
 
-    /// SPL token mint address for this NFT.
-    pub mint: Pubkey, // 32
+    /// Metaplex Core asset address for this NFT.
+    pub asset: Pubkey, // 32
 
     /// VinylVault off-chain token identifier (e.g. "VX-A1B2-C3D4").
     #[max_len(32)]
@@ -39,7 +39,8 @@ pub struct RecordCertificate {
     pub condition: String, // 4 + 32
 
     /// Optional URI pointing to off-chain JSON metadata (IPFS, Arweave, etc.).
-    /// Leave empty if metadata is fully on-chain in this account.
+    /// This URI is also stored in the Metaplex Core asset; leave empty if
+    /// metadata is fully on-chain in this account.
     #[max_len(200)]
     pub metadata_uri: String, // 4 + 200
 

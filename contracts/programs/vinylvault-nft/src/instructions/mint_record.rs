@@ -1,8 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount},
-};
+use mpl_core::instructions::CreateV1CpiBuilder;
 
 use crate::error::VinylVaultError;
 use crate::state::RecordCertificate;
@@ -18,41 +15,28 @@ pub struct MintRecordNft<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 
-    /// Freshly-generated SPL token mint (decimals = 0, supply = 1).
+    /// Freshly-generated Metaplex Core asset account.
     /// The keypair must be passed in by the client and signed as a co-signer.
-    #[account(
-        init,
-        payer = authority,
-        mint::decimals = 0,
-        mint::authority = authority,
-        mint::freeze_authority = authority,
-    )]
-    pub mint: Account<'info, Mint>,
+    /// CHECK: created by mpl-core CPI; account structure is validated there.
+    #[account(mut)]
+    pub asset: Signer<'info>,
 
-    /// Associated token account that will hold the single NFT.
-    #[account(
-        init,
-        payer = authority,
-        associated_token::mint = mint,
-        associated_token::authority = authority,
-    )]
-    pub token_account: Account<'info, TokenAccount>,
-
-    /// PDA that permanently stores the record metadata on-chain.
-    /// Seeds: ["record-cert", mint.key()]
+    /// PDA that permanently stores the extended record metadata on-chain.
+    /// Seeds: ["record-cert", asset.key()]
     #[account(
         init,
         payer = authority,
         space = RecordCertificate::SPACE,
-        seeds = [b"record-cert", mint.key().as_ref()],
+        seeds = [b"record-cert", asset.key().as_ref()],
         bump,
     )]
     pub certificate: Account<'info, RecordCertificate>,
 
     pub system_program: Program<'info, System>,
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub rent: Sysvar<'info, Rent>,
+
+    /// CHECK: verified against the canonical mpl-core program ID.
+    #[account(address = mpl_core::ID)]
+    pub mpl_core_program: UncheckedAccount<'info>,
 }
 
 /* ------------------------------------------------------------------ */
@@ -91,36 +75,23 @@ pub fn handler(ctx: Context<MintRecordNft>, args: MintRecordArgs) -> Result<()> 
     require!(args.condition.len() <= 32, VinylVaultError::StringTooLong);
     require!(args.metadata_uri.len() <= 200, VinylVaultError::StringTooLong);
 
-    // --- Mint exactly 1 token to the authority's associated token account ---
-    anchor_spl::token::mint_to(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            anchor_spl::token::MintTo {
-                mint: ctx.accounts.mint.to_account_info(),
-                to: ctx.accounts.token_account.to_account_info(),
-                authority: ctx.accounts.authority.to_account_info(),
-            },
-        ),
-        1,
-    )?;
+    // Build a display name: "Artist - Title"
+    let asset_name = format!("{} - {}", args.artist, args.title);
 
-    // --- Remove mint authority — makes this a true 1/1 non-fungible token ---
-    anchor_spl::token::set_authority(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            anchor_spl::token::SetAuthority {
-                current_authority: ctx.accounts.authority.to_account_info(),
-                account_or_mint: ctx.accounts.mint.to_account_info(),
-            },
-        ),
-        anchor_spl::token::spl_token::instruction::AuthorityType::MintTokens,
-        None,
-    )?;
+    // --- Create the Metaplex Core asset (1/1 NFT) ---
+    CreateV1CpiBuilder::new(&ctx.accounts.mpl_core_program)
+        .asset(&ctx.accounts.asset)
+        .authority(Some(&ctx.accounts.authority))
+        .payer(&ctx.accounts.authority)
+        .owner(Some(&ctx.accounts.authority))
+        .name(asset_name)
+        .uri(args.metadata_uri.clone())
+        .invoke()?;
 
     // --- Populate the RecordCertificate PDA ---
     let cert = &mut ctx.accounts.certificate;
     cert.authority = ctx.accounts.authority.key();
-    cert.mint = ctx.accounts.mint.key();
+    cert.asset = ctx.accounts.asset.key();
     cert.token_id = args.token_id;
     cert.artist = args.artist;
     cert.title = args.title;
