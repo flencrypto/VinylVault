@@ -1,159 +1,86 @@
+// components/stat-card.js — now with smooth counter animation + mini sparkline
 class StatCard extends HTMLElement {
   static get observedAttributes() {
-    return ["icon", "label", "value", "trend"];
+    return ['value', 'label', 'icon', 'trend'];
+  }
+
+  constructor() {
+    super();
+    this.value = 0;
+    this._animTimer = null;
   }
 
   connectedCallback() {
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
-    }
-    this.render();
+    this._updateValue();
+    this._render();
   }
 
   attributeChangedCallback() {
-    this.render();
-  }
-
-  render() {
-    if (!this.shadowRoot) {
-      this.attachShadow({ mode: "open" });
+    if (this.isConnected) {
+      this._updateValue();
+      this._render();
     }
-
-    const icon = this.getAttribute("icon") || "activity";
-    const label = this.getAttribute("label") || "Stat";
-    const value = this.getAttribute("value") || "-";
-    const trend = this.getAttribute("trend") || "";
-
-    this.shadowRoot.innerHTML = `
-      <style>
-        :host {
-          display: block;
-        }
-        .card {
-          background: #1e293b;
-          border: 1px solid #334155;
-          border-radius: 12px;
-          padding: 1.25rem;
-          transition: all 0.2s ease;
-        }
-        .card:hover {
-          border-color: #7c3aed;
-        }
-        .header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 0.75rem;
-        }
-        .icon-wrapper {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #7c3aed20 0%, #06b6d420 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #7c3aed;
-        }
-        .trend {
-          font-size: 0.75rem;
-          font-weight: 500;
-          padding: 0.25rem 0.625rem;
-          border-radius: 9999px;
-          background: #22c55e20;
-          color: #22c55e;
-        }
-        .trend.neutral {
-          background: #64748b20;
-          color: #94a3b8;
-        }
-        .label {
-          font-size: 0.875rem;
-          color: #94a3b8;
-          margin-bottom: 0.25rem;
-        }
-        .value {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #f1f5f9;
-        }
-        .sparkline {
-          height: 48px;
-          background: linear-gradient(90deg, transparent, var(--vf-accent, #e8c06a), transparent);
-          opacity: 0.15;
-          margin-top: 12px;
-          border-radius: 8px;
-        }
-      </style>
-      <div class="card">
-        <div class="header">
-          <div class="icon-wrapper">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              ${this.getIconPath(icon)}
-            </svg>
-          </div>
-          <span class="trend ${trend.includes("+") ? "" : "neutral"}">${trend}</span>
-        </div>
-        <p class="label">${label}</p>
-        <p class="value">${value}</p>
-        <div class="sparkline" aria-hidden="true"></div>
-      </div>
-    `;
-    this.animateCounter();
   }
 
   disconnectedCallback() {
-    cancelAnimationFrame(this._animFrame);
-    this._animFrame = null;
+    if (this._animTimer !== null) {
+      clearInterval(this._animTimer);
+      this._animTimer = null;
+    }
   }
 
-  animateCounter() {
-    cancelAnimationFrame(this._animFrame);
-    this._animFrame = null;
-    const counter = this.shadowRoot.querySelector(".value");
-    const raw = this.getAttribute("value") || "";
-    // Extract optional non-numeric prefix, numeric portion, and optional suffix
-    const match = raw.match(/^([^0-9]*)([0-9,]+(?:\.[0-9]*)?)(.*)$/);
-    if (!match) return;
-    const prefix = match[1];
-    const numStr = match[2].replace(/,/g, "");
-    const suffix = match[3];
-    const target = parseFloat(numStr);
-    if (isNaN(target) || target === 0) return;
-    const isFloat = numStr.includes(".");
-    const decimals = isFloat ? (numStr.split(".")[1] || "").length : 0;
+  _updateValue() {
+    const raw = this.getAttribute('value') || '0';
+    // Strip non-numeric chars (except leading minus and first decimal point)
+    const numeric = raw.replace(/[^0-9.\-]/g, '');
+    this.value = parseFloat(numeric) || 0;
+  }
+
+  _render() {
+    if (this._animTimer !== null) {
+      clearInterval(this._animTimer);
+      this._animTimer = null;
+    }
+    this.innerHTML = `
+      <div class="card stat-card">
+        <div style="display:flex; justify-content:space-between; align-items:start;">
+          <div>
+            <div style="font-size:0.95rem; color:var(--vf-text-muted); text-transform:uppercase; letter-spacing:0.5px;">${this.getAttribute('label') || ''}</div>
+            <div class="stat-value" id="counter">0</div>
+          </div>
+          <div style="font-size:2rem; opacity:0.3;">${this.getAttribute('icon') || '📀'}</div>
+        </div>
+        <!-- Mini sparkline (CSS only) -->
+        <div style="height:48px; background:linear-gradient(90deg, transparent, var(--vf-accent-light), transparent); opacity:0.15; margin-top:12px; border-radius:8px;"></div>
+      </div>
+    `;
+    this._animateCounter();
+  }
+
+  _animateCounter() {
+    const counter = this.querySelector('#counter');
+    if (!counter) return;
+    const raw = this.getAttribute('value') || '0';
+    // Extract leading non-digit prefix (e.g. "£", "+") and trailing suffix (e.g. "%")
+    const prefixMatch = raw.match(/^([^0-9]*)[\d]/);
+    const suffixMatch = raw.match(/[\d]([^0-9]*)$/);
+    const prefix = prefixMatch ? prefixMatch[1] : '';
+    const suffix = suffixMatch ? suffixMatch[1] : '';
+    const target = this.value;
+
+    let start = 0;
     const duration = 1200;
-    let startTime = null;
-    const frame = (timestamp) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = Math.min(timestamp - startTime, duration);
-      const progress = elapsed / duration;
-      const current = target * progress;
-      const display = isFloat
-        ? current.toFixed(decimals)
-        : Math.floor(current).toLocaleString();
-      counter.textContent = prefix + display + suffix;
-      if (elapsed < duration) {
-        this._animFrame = requestAnimationFrame(frame);
+    const increment = target / (duration / 16);
+    this._animTimer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        start = target;
+        clearInterval(this._animTimer);
+        this._animTimer = null;
       }
-    };
-    this._animFrame = requestAnimationFrame(frame);
-  }
-
-  getIconPath(name) {
-    const icons = {
-      "check-circle":
-        '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-      "trending-up":
-        '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-      clock:
-        '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-      activity: '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
-      "dollar-sign":
-        '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-    };
-    return icons[name] || icons["activity"];
+      counter.textContent = prefix + Math.floor(start).toLocaleString() + suffix;
+    }, 16);
   }
 }
 
-customElements.define("stat-card", StatCard);
+customElements.define('stat-card', StatCard);
