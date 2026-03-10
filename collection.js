@@ -316,6 +316,11 @@ function renderVerifyPhotos() {
   const grid = document.getElementById("verifyPhotoGrid");
   if (verifyPhotos.length === 0) {
     grid.innerHTML = "";
+    // Hide OCR button when no photos
+    const ocrBtn = document.getElementById("verifyOcrBtn");
+    const ocrStatus = document.getElementById("verifyOcrStatus");
+    if (ocrBtn) ocrBtn.classList.add("hidden");
+    if (ocrStatus) ocrStatus.classList.add("hidden");
     return;
   }
 
@@ -331,12 +336,99 @@ function renderVerifyPhotos() {
     `,
     )
     .join("");
+
+  // Show OCR button now that photos are available
+  const ocrBtn = document.getElementById("verifyOcrBtn");
+  if (ocrBtn) ocrBtn.classList.remove("hidden");
+
   feather.replace();
 }
 
 function removeVerifyPhoto(idx) {
   verifyPhotos.splice(idx, 1);
   renderVerifyPhotos();
+}
+
+/**
+ * Run Tesseract OCR on the currently uploaded verify photos and pre-fill
+ * the verification notes field with extracted text (artist, title, label,
+ * catalogue number, year).  The user can review and adjust before saving.
+ */
+async function runVerifyOCR() {
+  if (verifyPhotos.length === 0) {
+    showToast("Upload at least one photo first", "error");
+    return;
+  }
+
+  if (!window.tesseractOcrService) {
+    showToast("Tesseract OCR service is not available", "error");
+    return;
+  }
+
+  const btn = document.getElementById("verifyOcrBtn");
+  const label = document.getElementById("verifyOcrBtnLabel");
+  const status = document.getElementById("verifyOcrStatus");
+
+  if (btn) btn.disabled = true;
+  if (label) label.textContent = "Running OCR…";
+  if (status) {
+    status.textContent = "Loading OCR engine (first run may take a moment)…";
+    status.classList.remove("hidden");
+  }
+
+  try {
+    const result = await window.tesseractOcrService.analyzeRecordImages(
+      verifyPhotos,
+      (pct) => {
+        if (status) status.textContent = `OCR progress: ${pct}%`;
+      },
+    );
+
+    // Build a summary of what was found
+    const found = [];
+    if (result.artist) found.push(`Artist: ${result.artist}`);
+    if (result.title) found.push(`Title: ${result.title}`);
+    if (result.label) found.push(`Label: ${result.label}`);
+    if (result.catalogueNumber) found.push(`Cat#: ${result.catalogueNumber}`);
+    if (result.year) found.push(`Year: ${result.year}`);
+    if (result.country) found.push(`Country: ${result.country}`);
+    if (result.matrixRunoutA)
+      found.push(`Matrix A: ${result.matrixRunoutA}`);
+    if (result.matrixRunoutB)
+      found.push(`Matrix B: ${result.matrixRunoutB}`);
+
+    const notesField = document.getElementById("verifyNotes");
+    if (notesField) {
+      const ocrBlock = found.length > 0
+        ? `[OCR detected]\n${found.join("\n")}`
+        : "[OCR ran but could not extract structured data — check raw text in notes]";
+      const existing = notesField.value.trim();
+      notesField.value = existing
+        ? `${existing}\n\n${ocrBlock}`
+        : ocrBlock;
+    }
+
+    if (status) {
+      status.textContent =
+        found.length > 0
+          ? `OCR complete — ${found.length} field(s) detected (confidence: ${result.confidence})`
+          : "OCR complete — no structured data found";
+    }
+
+    showToast(
+      found.length > 0
+        ? `OCR found ${found.length} field(s) — check Notes`
+        : "OCR ran but found limited data",
+      found.length > 0 ? "success" : "error",
+    );
+  } catch (err) {
+    console.error("Tesseract OCR error:", err);
+    if (status) status.textContent = `OCR failed: ${err.message}`;
+    showToast(`OCR failed: ${err.message}`, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (label) label.textContent = "Auto-fill from Photo (OCR)";
+  }
 }
 async function saveVerifiedRecord() {
   const record = pendingImports[currentVerifyIndex];
@@ -1899,10 +1991,16 @@ function changeRecordImages(index) {
           style="padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:8px;color:white;cursor:not-allowed;opacity:0.5;font-weight:600;font-size:0.9em">
           🤖 Update Details with AI Lookup
         </button>
+        <button id="ocrOnlyBtn" onclick="runOCROnlyExtraction()" disabled
+          style="padding:12px;background:#0f172a;border:1px solid #475569;border-radius:8px;color:#94a3b8;cursor:not-allowed;opacity:0.5;font-weight:600;font-size:0.9em">
+          🔤 OCR Text Extraction (no AI key needed)
+        </button>
       </div>
+      <p id="changeImagesOcrStatus" style="display:none;color:#64748b;font-size:0.75em;margin:8px 0 0;text-align:center"></p>
       <p style="color:#475569;font-size:0.75em;margin:12px 0 0;text-align:center;line-height:1.5">
         <strong style="color:#64748b">Just Update Images</strong> saves the photos without changing any details.<br>
-        <strong style="color:#64748b">AI Lookup</strong> analyses photos, finds the Discogs release, and updates all details.
+        <strong style="color:#64748b">AI Lookup</strong> analyses photos, finds the Discogs release, and updates all details.<br>
+        <strong style="color:#64748b">OCR Extraction</strong> reads text from photos locally — no API key required.
       </p>
     </div>`;
   document.body.appendChild(modal);
@@ -1923,8 +2021,10 @@ function handleChangeImagesFiles(event) {
 
   const justBtn = document.getElementById("justUpdateImagesBtn");
   const aiBtn = document.getElementById("aiLookupImagesBtn");
+  const ocrBtn = document.getElementById("ocrOnlyBtn");
   if (justBtn) { justBtn.disabled = false; justBtn.style.cursor = "pointer"; justBtn.style.opacity = "1"; }
   if (aiBtn) { aiBtn.disabled = false; aiBtn.style.cursor = "pointer"; aiBtn.style.opacity = "1"; }
+  if (ocrBtn) { ocrBtn.disabled = false; ocrBtn.style.cursor = "pointer"; ocrBtn.style.opacity = "1"; ocrBtn.style.color = "#e2e8f0"; }
 }
 
 async function saveJustImages() {
@@ -2003,6 +2103,17 @@ async function runAILookupOnImages() {
         `The selected xAI model (${xaiModel}) cannot analyze images. Choose a vision-capable model (e.g. grok-4-1-fast-reasoning) in Settings.`,
         "error",
       );
+    } else if (window.tesseractOcrService) {
+      // No AI API key configured — fall back to free client-side Tesseract OCR
+      if (aiBtn) aiBtn.textContent = "🔤 Running OCR…";
+      try {
+        const tesseractResult = await window.tesseractOcrService.analyzeRecordImages(files);
+        if (tesseractResult && tesseractResult.confidence !== "low") {
+          detection = { ...detection, ...tesseractResult };
+        }
+      } catch (e) {
+        console.log("Tesseract OCR failed:", e.message);
+      }
     }
 
     // Search Discogs
@@ -2034,6 +2145,122 @@ async function runAILookupOnImages() {
     showToast("AI lookup failed: " + e.message, "error");
     if (aiBtn) { aiBtn.textContent = "🤖 Update Details with AI Lookup"; aiBtn.disabled = false; aiBtn.style.opacity = "1"; }
   }
+}
+
+/**
+ * Run client-side Tesseract OCR on the selected Change Images photos and
+ * display the detected fields in a confirmation panel — no AI key required.
+ */
+async function runOCROnlyExtraction() {
+  const index = window._changeImagesIndex;
+  const files = window._changeImagesFiles || [];
+  if (!files.length) { showToast("No images selected", "error"); return; }
+  if (!window.tesseractOcrService) { showToast("Tesseract OCR service not available", "error"); return; }
+
+  const ocrBtn = document.getElementById("ocrOnlyBtn");
+  const ocrStatus = document.getElementById("changeImagesOcrStatus");
+  if (ocrBtn) { ocrBtn.textContent = "🔤 Running OCR…"; ocrBtn.disabled = true; ocrBtn.style.opacity = "0.7"; }
+  if (ocrStatus) { ocrStatus.textContent = "Loading OCR engine…"; ocrStatus.style.display = "block"; }
+
+  try {
+    const result = await window.tesseractOcrService.analyzeRecordImages(files, (pct) => {
+      if (ocrStatus) ocrStatus.textContent = `OCR progress: ${pct}%`;
+    });
+
+    if (ocrStatus) ocrStatus.style.display = "none";
+    showOCRExtractionPanel(index, result);
+  } catch (e) {
+    console.error("OCR extraction failed:", e);
+    showToast("OCR failed: " + e.message, "error");
+    if (ocrBtn) { ocrBtn.textContent = "🔤 OCR Text Extraction (no AI key needed)"; ocrBtn.disabled = false; ocrBtn.style.opacity = "1"; }
+    if (ocrStatus) ocrStatus.style.display = "none";
+  }
+}
+
+/**
+ * Show OCR results panel in the changeImagesModal, letting the user
+ * choose which detected fields to apply to the record.
+ * @param {number} index - collection record index
+ * @param {Object} ocrData - parsed OCR result from TesseractOCRService
+ */
+function showOCRExtractionPanel(index, ocrData) {
+  const modal = document.getElementById("changeImagesModal");
+  if (!modal) return;
+  const inner = modal.querySelector("div");
+
+  const fields = [
+    { key: "artist", label: "Artist", value: ocrData.artist },
+    { key: "title", label: "Title", value: ocrData.title },
+    { key: "label", label: "Label", value: ocrData.label },
+    { key: "catalogueNumber", label: "Cat #", value: ocrData.catalogueNumber },
+    { key: "year", label: "Year", value: ocrData.year },
+    { key: "country", label: "Country", value: ocrData.country },
+    { key: "matrixRunoutA", label: "Matrix A", value: ocrData.matrixRunoutA },
+    { key: "matrixRunoutB", label: "Matrix B", value: ocrData.matrixRunoutB },
+  ].filter((f) => f.value);
+
+  const fieldsHtml = fields.length > 0
+    ? fields.map((f) => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1e293b;cursor:pointer">
+          <input type="checkbox" name="ocrField" data-key="${f.key}" data-value="${String(f.value).replace(/"/g, "&quot;")}" checked
+            style="accent-color:#c8973f;width:16px;height:16px">
+          <span style="color:#94a3b8;font-size:0.8em;min-width:70px">${f.label}:</span>
+          <span style="color:#e2e8f0;font-size:0.85em">${f.value}</span>
+        </label>`).join("")
+    : `<p style="color:#f59e0b;font-size:0.85em;padding:8px 0">OCR could not extract structured fields from these images. Try clearer photos of the label or sleeve.</p>`;
+
+  inner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:1.1em;color:#e2e8f0">🔤 OCR Detected Fields</h3>
+      <button onclick="document.getElementById('changeImagesModal').remove()" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:1.4em;line-height:1">✕</button>
+    </div>
+    <p style="color:#94a3b8;font-size:0.8em;margin-bottom:8px">
+      Confidence: <strong style="color:${ocrData.confidence === 'high' ? '#4ade80' : ocrData.confidence === 'medium' ? '#f59e0b' : '#ef4444'}">${ocrData.confidence || 'low'}</strong>
+      — select the fields you want to apply:
+    </p>
+    <div style="max-height:260px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;margin-bottom:16px">
+      ${fieldsHtml}
+    </div>
+    <div style="display:grid;gap:10px">
+      ${fields.length > 0 ? `
+      <button onclick="applyOCRFields(${index})"
+        style="padding:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:8px;color:white;cursor:pointer;font-weight:600;font-size:0.9em">
+        ✓ Apply Selected Fields to Record
+      </button>` : ""}
+      <button onclick="document.getElementById('changeImagesModal').remove()"
+        style="padding:12px;background:transparent;border:1px solid #475569;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.9em">
+        ✕ Cancel
+      </button>
+    </div>`;
+}
+
+/**
+ * Apply OCR-detected fields chosen by the user to the collection record.
+ * @param {number} index - collection record index
+ */
+function applyOCRFields(index) {
+  const checkboxes = document.querySelectorAll('input[name="ocrField"]:checked');
+  if (checkboxes.length === 0) {
+    showToast("No fields selected", "error");
+    return;
+  }
+
+  const record = collection[index];
+  checkboxes.forEach((cb) => {
+    const key = cb.dataset.key;
+    const value = cb.dataset.value;
+    if (key && value !== undefined) {
+      record[key] = key === "year" ? (parseInt(value, 10) || value) : value;
+    }
+  });
+
+  saveCollection();
+  renderCollection();
+  const modal = document.getElementById("changeImagesModal");
+  if (modal) modal.remove();
+  closeRecordModal();
+  viewRecordDetail(index);
+  showToast(`Applied ${checkboxes.length} OCR field(s) to record`, "success");
 }
 
 function showAILookupConfirmation(index, detection, discogsMatch) {
