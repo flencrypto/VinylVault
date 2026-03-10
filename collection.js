@@ -1996,6 +1996,13 @@ async function runAILookupOnImages() {
       } catch (e) {
         console.log("OCR failed, using record data:", e.message);
       }
+    } else if (aiProvider === "xai" && localStorage.getItem("xai_api_key")) {
+      // xAI is configured but the selected model is not vision-capable — inform the user
+      // instead of silently skipping OCR (which would leave fields unchanged).
+      showToast(
+        `The selected xAI model (${xaiModel}) cannot analyze images. Choose a vision-capable model (e.g. grok-4-1-fast-reasoning) in Settings.`,
+        "error",
+      );
     }
 
     // Search Discogs

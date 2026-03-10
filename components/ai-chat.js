@@ -492,27 +492,37 @@ class AIChat extends HTMLElement {
 
     // Build pressing intelligence section if available
     const hasPressingData = data.pressingType || data.matrixRunoutA || data.matrixRunoutB || data.conditionEstimate;
-    const pressingHtml = hasPressingData ? `
+    const pressingHtml = hasPressingData ? (() => {
+      // Whitelist pressing type and confidence to prevent XSS via AI-returned values
+      // being injected into class attributes or element content.
+      const ALLOWED_PRESSING_TYPES = new Set(["first_press", "repress", "reissue", "unknown"]);
+      const ALLOWED_CONFIDENCE_VALUES = new Set(["high", "medium", "low"]);
+      const safePressingType = ALLOWED_PRESSING_TYPES.has(data.pressingType) ? data.pressingType : null;
+      const safePressingConfidence = ALLOWED_CONFIDENCE_VALUES.has(data.pressingConfidence) ? data.pressingConfidence : null;
+      const pressingTypeColor = safePressingType === "first_press" ? "#22c55e" : safePressingType === "repress" ? "#f59e0b" : "#94a3b8";
+      const pressingTypeLabel = safePressingType ? safePressingType.replace("_", " ") : null;
+      return `
       <div style="margin-top:10px;padding:10px;background:#0a1220;border-radius:6px;border:1px solid #1e3a5f;">
         <div style="font-size:10px;color:#64748b;text-transform:uppercase;margin-bottom:6px;font-weight:500;">⚙️ Pressing Intelligence</div>
-        ${data.pressingType ? `<div style="font-size:11px;margin-bottom:4px;">
+        ${safePressingType ? `<div style="font-size:11px;margin-bottom:4px;">
           <span style="color:#64748b;">Type:</span>
-          <span style="color:${data.pressingType === "first_press" ? "#22c55e" : data.pressingType === "repress" ? "#f59e0b" : "#94a3b8"};font-weight:600;margin-left:4px;">${data.pressingType.replace("_", " ")}</span>
-          ${data.pressingConfidence ? `<span class="confidence-indicator confidence-${data.pressingConfidence}" style="margin-left:6px;">${data.pressingConfidence}</span>` : ""}
+          <span style="color:${pressingTypeColor};font-weight:600;margin-left:4px;">${pressingTypeLabel}</span>
+          ${safePressingConfidence ? `<span class="confidence-indicator confidence-${safePressingConfidence}" style="margin-left:6px;">${safePressingConfidence}</span>` : ""}
         </div>` : ""}
         ${data.matrixRunoutA ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Side A: <code style="color:#e2e8f0;font-size:10px;">${this.escapeHtml(data.matrixRunoutA)}</code></div>` : ""}
         ${data.matrixRunoutB ? `<div style="font-size:11px;color:#94a3b8;margin-bottom:2px;">Side B: <code style="color:#e2e8f0;font-size:10px;">${this.escapeHtml(data.matrixRunoutB)}</code></div>` : ""}
         ${data.conditionEstimate ? `<div style="font-size:11px;margin-top:4px;"><span style="color:#64748b;">Condition:</span> <span style="color:#e2e8f0;font-weight:600;">${this.escapeHtml(data.conditionEstimate)}</span></div>` : ""}
         ${data.pressingEvidence && data.pressingEvidence.length > 0 ? `<div style="font-size:10px;color:#64748b;margin-top:6px;">${data.pressingEvidence.slice(0, 2).map((e) => `• ${this.escapeHtml(e)}`).join("<br>")}</div>` : ""}
       </div>
-    ` : "";
+    `;
+    })() : "";
 
     // Build detected fields display
     const fieldsHtml = `
       <div class="detected-fields">
         <h4>Detected Information 
-          <span class="confidence-indicator confidence-${data.confidence || "medium"}">
-            ${data.confidence || "medium"} confidence
+          <span class="confidence-indicator confidence-${["high","medium","low"].includes(data.confidence) ? data.confidence : "medium"}">
+            ${["high","medium","low"].includes(data.confidence) ? data.confidence : "medium"} confidence
           </span>
         </h4>
         <div class="field-grid">
@@ -906,32 +916,12 @@ class AIChat extends HTMLElement {
         if (reply) {
           this.addMessage(reply, "ai");
         } else {
-          this.addMessage(
-            "I'm not sure how to interpret that. You can:<br>" +
-            "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
-            "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
-            "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
-            "• Paste a Discogs release URL to fetch the correct details<br>" +
-            "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
-            "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
-            "Or click <strong>✓ All Correct</strong> if everything looks good!",
-            "ai",
-          );
+          this.addMessage(this.getHelpBlurbHtml(), "ai");
         }
       } catch (err) {
         console.warn("AI fallback call failed:", err);
         this.hideTyping();
-        this.addMessage(
-          "I'm not sure how to interpret that. You can:<br>" +
-          "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
-          "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
-          "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
-          "• Paste a Discogs release URL to fetch the correct details<br>" +
-          "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
-          "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
-          "Or click <strong>✓ All Correct</strong> if everything looks good!",
-          "ai",
-        );
+        this.addMessage(this.getHelpBlurbHtml(), "ai");
       }
     })();
   }
@@ -1064,6 +1054,24 @@ class AIChat extends HTMLElement {
     }
 
     return extracted;
+  }
+
+  /**
+   * Returns the static help blurb HTML shown when no AI is available or
+   * the AI call fails. Centralised here so both the null-reply and error
+   * branches stay in sync.
+   */
+  getHelpBlurbHtml() {
+    return (
+      "I'm not sure how to interpret that. You can:<br>" +
+      "• Use the <strong>Wrong [Field]</strong> buttons to correct a specific field<br>" +
+      "• Type a full description like <em>\"Artist – Title LP Year CatNo Condition\"</em><br>" +
+      "• Say something like <em>\"the year is 1973\"</em> or <em>\"the artist is Black Sabbath\"</em><br>" +
+      "• Paste a Discogs release URL to fetch the correct details<br>" +
+      "• Type <em>\"[term] on label\"</em> to search the Discogs release notes for context<br>" +
+      "• Type <em>\"add note: [your text]\"</em> to add a note directly to the listing<br>" +
+      "Or click <strong>✓ All Correct</strong> if everything looks good!"
+    );
   }
 
   /**
