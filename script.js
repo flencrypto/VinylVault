@@ -919,9 +919,13 @@ function populateFieldsFromOCR(data) {
     window.detectedIdentifierStrings = data.identifierStrings;
   // Store pressing identification data
   if (data.pressingType) window.detectedPressingType = data.pressingType;
-  if (data.isFirstPress) window.detectedIsFirstPress = data.isFirstPress;
+  if (data.isFirstPress !== null && data.isFirstPress !== undefined) window.detectedIsFirstPress = data.isFirstPress;
   if (data.reissueYear) window.detectedReissueYear = data.reissueYear;
   if (data.originalYear) window.detectedOriginalYear = data.originalYear;
+  if (data.pressingEvidence) window.detectedPressingEvidence = data.pressingEvidence;
+  if (data.pressingConfidence) window.detectedPressingConfidence = data.pressingConfidence;
+  if (Array.isArray(data.tracklist) && data.tracklist.length > 0)
+    window.detectedTracklist = data.tracklist;
 
   // Update UI to show detected info
   updateDetectedInfoPanel(data);
@@ -1025,16 +1029,9 @@ function updateDetectedInfoPanel(data) {
     );
 
   // Add pressing identification info
-  if (data.isFirstPress !== undefined) {
-    const pressBadge = data.isFirstPress
-      ? '<span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">FIRST PRESS</span>'
-      : data.pressingType === "reissue"
-        ? '<span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">REISSUE</span>'
-        : data.pressingType === "repress"
-          ? '<span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">REPRESS</span>'
-          : "";
-    if (pressBadge) infoItems.push(pressBadge);
-  }
+  const pressBadge = pressingTypeBadge(data.pressingType) ||
+    (data.isFirstPress === true ? pressingTypeBadge("first_press") : "");
+  if (pressBadge) infoItems.push(pressBadge);
 
   if (data.originalYear && data.originalYear !== data.year) {
     infoItems.push(
@@ -1053,6 +1050,30 @@ function updateDetectedInfoPanel(data) {
       : data.confidence === "medium"
         ? "text-yellow-400"
         : "text-orange-400";
+
+  const pressingEvidenceHtml =
+    data.pressingEvidence?.length
+      ? `
+            <div class="mt-2 pt-2 border-t border-green-500/20">
+                <p class="text-xs text-gray-400 mb-1">Pressing evidence:</p>
+                <ul class="text-xs text-gray-500 list-disc list-inside">
+                    ${data.pressingEvidence.map((e) => `<li>${e}</li>`).join("")}
+                </ul>
+            </div>
+        `
+      : "";
+
+  const tracklistHtml =
+    Array.isArray(data.tracklist) && data.tracklist.length > 0
+      ? `
+            <div class="mt-2 pt-2 border-t border-green-500/20">
+                <p class="text-xs text-gray-400 mb-1">Tracklist detected:</p>
+                <ol class="text-xs text-gray-500 list-decimal list-inside">
+                    ${data.tracklist.map((t) => `<li>${t}</li>`).join("")}
+                </ol>
+            </div>
+        `
+      : "";
 
   panel.innerHTML = `
         <div class="flex items-center gap-2 mb-2">
@@ -1080,6 +1101,7 @@ function updateDetectedInfoPanel(data) {
         `
             : ""
         }
+        ${pressingEvidenceHtml}
         ${
           data.identifierStrings?.length
             ? `
@@ -1092,6 +1114,7 @@ function updateDetectedInfoPanel(data) {
         `
             : ""
         }
+        ${tracklistHtml}
     `;
   if (typeof feather !== "undefined") feather.replace();
 }
@@ -1165,6 +1188,52 @@ function getUploadedPhotoHints() {
       .map((token) => token.trim())
       .filter((token) => token.length >= 3);
   });
+}
+
+/**
+ * Build a context string from OCR-detected pressing metadata to enrich
+ * AI listing and analysis prompts.
+ * @returns {string}
+ */
+function getDetectedPressingContext() {
+  const parts = [];
+  const matrixA = document.getElementById("matrixSideAInput")?.value?.trim();
+  const matrixB = document.getElementById("matrixSideBInput")?.value?.trim();
+  if (matrixA) parts.push(`Matrix A: ${matrixA}`);
+  if (matrixB) parts.push(`Matrix B: ${matrixB}`);
+  if (window.detectedLabel) parts.push(`Label: ${window.detectedLabel}`);
+  if (window.detectedCountry) parts.push(`Country: ${window.detectedCountry}`);
+  if (window.detectedLabelCode) parts.push(`Label Code: ${window.detectedLabelCode}`);
+  if (window.detectedPressingPlant) parts.push(`Pressing Plant: ${window.detectedPressingPlant}`);
+  if (window.detectedPressingType) parts.push(`Pressing Type: ${formatPressingType(window.detectedPressingType)}`);
+  if (window.detectedPressingEvidence?.length)
+    parts.push(`Pressing Evidence: ${window.detectedPressingEvidence.join("; ")}`);
+  return parts.join(" | ");
+}
+
+/**
+ * Convert a snake_case pressing type string to a human-readable label.
+ * @param {string} type  e.g. "first_press", "early_press"
+ * @returns {string}
+ */
+function formatPressingType(type) {
+  if (!type) return "";
+  return type.replace(/_/g, " ");
+}
+
+/**
+ * Return an HTML badge span for the given pressing type, or "" if unknown.
+ * @param {string|null|undefined} type
+ * @returns {string}
+ */
+function pressingTypeBadge(type) {
+  const badges = {
+    first_press: '<span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">FIRST PRESS</span>',
+    early_press: '<span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-xs font-medium">EARLY PRESS</span>',
+    repress: '<span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">REPRESS</span>',
+    reissue: '<span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">REISSUE</span>',
+  };
+  return badges[type] || "";
 }
 
 function mergeReleaseIntoDetection(currentDetection, release) {
@@ -2181,7 +2250,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -3622,7 +3691,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -4552,7 +4621,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -5591,7 +5660,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -6597,7 +6666,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -7936,7 +8005,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -8983,7 +9052,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -10171,7 +10240,7 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}${notesContext ? ` | ${notesContext}` : ""}. Verify the Discogs release page details against photo evidence, explicitly cover Tracklist and Notes from that release, and reference Barcode/Other Identifier + matrix/runout matches. Include optimized title options, professional HTML description with an About This Release section, condition guidance, sold-price-led estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}${notesContext ? ` | ${notesContext}` : ""}. Verify the Discogs release page details against photo evidence, explicitly cover Tracklist and Notes from that release, and reference Barcode/Other Identifier + matrix/runout matches. Include optimized title options, professional HTML description with an About This Release section, condition guidance, sold-price-led estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
@@ -10420,6 +10489,21 @@ function addListingToCollection(data, ebayHtml) {
     year: data.year ? parseInt(data.year) : null,
     format: window.detectedFormat || "LP",
     genre: window.detectedGenre || "",
+    label: window.detectedLabel || "",
+    country: window.detectedCountry || "",
+    matrixRunoutA:
+      document.getElementById("matrixSideAInput")?.value?.trim() ||
+      window.detectedMatrixRunoutA ||
+      "",
+    matrixRunoutB:
+      document.getElementById("matrixSideBInput")?.value?.trim() ||
+      window.detectedMatrixRunoutB ||
+      "",
+    labelCode: window.detectedLabelCode || "",
+    pressingPlant: window.detectedPressingPlant || "",
+    pressingType: window.detectedPressingType || "",
+    pressingEvidence: window.detectedPressingEvidence || [],
+    tracklist: window.detectedTracklist || [],
     purchasePrice: parseFloat(data.cost) || 0,
     purchaseDate,
     purchaseSource: "other",
