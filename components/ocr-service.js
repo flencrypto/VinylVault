@@ -786,7 +786,9 @@ Be thorough and precise. Read every visible character. For pressing identificati
       const data = await response.json();
       const content = data.choices[0].message.content;
       // Extract JSON from potential markdown code blocks
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|([\s\S]*)/);
+      const jsonMatch = content.match(
+        /```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})/,
+      );
       const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[2] : content;
 
       try {
