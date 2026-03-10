@@ -1,19 +1,25 @@
 # VinylVault
 
-## Assumptions
+## Overview
 
-- This repository is currently a static web application (`index.html`, `style.css`, `script.js`) used to generate record listing drafts.
-- The near-term goal is to make the project production-ready without rewriting the UI first.
-- Credentialed third-party integrations (Discogs, AI providers, marketplace APIs) should move server-side before launch.
+VinylVault is a collector-first vinyl valuation and marketplace arbitrage tool. It helps you identify, value, and manage your vinyl record collection using AI-assisted pressing identification, live market data from Discogs and eBay, and optional Solana NFT minting for rare pressings.
 
-## Scope
+The project has two parallel layers:
 
-This repository now includes a concrete completion plan and security/compliance baseline documents for the next implementation phase:
+- **v1** — a static Progressive Web App (PWA) you can use right now in any browser.
+- **v2** — a Next.js 15 rewrite (in progress) with server-side API handling and a richer UI.
 
-- Architecture and delivery roadmap.
-- Security controls and operational requirements.
-- Privacy and data-retention policy baseline.
-- STRIDE-oriented threat model.
+An Android APK wrapping the v1 PWA is also available for sideloading or Play Store distribution.
+
+## What's in this repo
+
+| Layer | Description |
+|-------|-------------|
+| **v1 static PWA** | `index.html` + `script.js` + `style.css` — the original collector tool. Runs as a Progressive Web App in any browser or as a native Android app (TWA). |
+| **v2 Next.js app** | `v2/` — in-progress Next.js 15 rewrite with server-side API key handling, Radix UI components, and a proper route structure. |
+| **Android wrapper** | `android/` — Trusted Web Activity (TWA) Gradle project that packages the PWA as a Play-Store-ready APK/AAB. |
+| **Solana contracts** | `contracts/` — Anchor smart contracts for NFT minting of rare pressings (Metaplex Core). |
+| **Components** | `components/` — v1 web components: AI services (xAI, OCR), Discogs, eBay, Solana, Telegram, price charts, and more. |
 
 ## Installing VinylVault
 
@@ -172,43 +178,107 @@ For developer instructions (building from source, signing, and publishing to Goo
 
 ---
 
-## How to run (current app)
-
-1. Serve the repository with any static file server.
-2. Open `index.html` in a browser.
-
-Examples:
-
-```bash
-python3 -m http.server 8080
-# then visit http://localhost:8080
-```
-
-## Current file tree (selected)
+## Repository structure
 
 ```text
 .
-├── index.html
-├── style.css
-├── script.js
-├── components/
-├── SECURITY.md
-├── PRIVACY.md
-├── THREATMODEL.md
-└── docs/
-    └── COMPLETION_PLAN.md
+├── index.html               ← v1 PWA entry point
+├── style.css                ← v1 global styles
+├── script.js                ← v1 main application logic
+├── collection.html          ← v1 Collection page
+├── collection.js            ← v1 Collection page logic
+├── vinyl.html               ← v1 individual record page
+├── deals.html               ← v1 Deal Finder page
+├── deals.js                 ← v1 Deal Finder logic
+├── settings.html            ← v1 Settings page
+├── sw.js                    ← Service Worker (PWA offline support)
+├── manifest.json            ← PWA manifest
+├── components/              ← v1 web components (AI, Discogs, eBay, Solana, …)
+├── audio/                   ← audio assets
+├── branding/                ← logos, colour tokens, and favicon sources
+├── static/                  ← deployed icons, OG images, and screenshots
+├── scripts/                 ← build and utility scripts
+├── android/                 ← Android TWA wrapper (Gradle project)
+├── contracts/               ← Solana Anchor smart contracts (NFT minting)
+├── v2/                      ← Next.js 15 rewrite (in progress)
+├── releases/                ← pre-built release APKs
+├── docs/                    ← architecture and planning documents
+├── ANDROID_BUILD.md         ← Android build guide
+├── DISCOGS_API_INTEGRATION.md ← Discogs API implementation notes
+├── REQUIRED_KEYS_AND_LOGINS.txt ← all API keys and where to obtain them
+├── SECURITY.md              ← security baseline and hardening checklist
+├── PRIVACY.md               ← UK GDPR data-handling and retention policy
+└── THREATMODEL.md           ← STRIDE threat model and mitigations
 ```
 
-## Commands to run
+## How to run
+
+### v1 — static PWA
+
+Serve the repository root with any static file server and open `index.html`.
 
 ```bash
+# Python (no install required)
 python3 -m http.server 8080
-node --check script.js
+# then visit http://localhost:8080
+
+# or via pnpm script
+pnpm run preview:static
 ```
 
-## Documentation added
+#### Lint and type-check (v1)
 
-- `docs/COMPLETION_PLAN.md` — phased completion plan with priorities and acceptance criteria.
-- `SECURITY.md` — minimum security baseline and hardening checklist.
-- `PRIVACY.md` — UK GDPR-oriented data handling and retention policy.
-- `THREATMODEL.md` — STRIDE threat model and mitigations.
+```bash
+# Install dev dependencies (first time only)
+pnpm install
+
+# Syntax check the main script
+node --check script.js
+
+# ESLint
+pnpm run lint
+
+# TypeScript type check
+pnpm run typecheck
+```
+
+### v2 — Next.js app
+
+See **[v2/README.md](v2/README.md)** for full setup instructions.
+
+Quick start:
+
+```bash
+cd v2
+pnpm install
+cp .env.example .env.local   # then fill in your API keys
+pnpm run dev
+# then visit http://localhost:3000
+```
+
+Required API keys are documented in **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KEYS_AND_LOGINS.txt)**.
+
+## Integrations
+
+| Integration | Feature | Key(s) required |
+|-------------|---------|----------------|
+| **Discogs** | Collection import, pressing comps, Variant Resolver | `DISCOGS_USER_TOKEN` |
+| **eBay** | Sold-listing comps, listing preview generator | `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET` |
+| **OpenAI** | OCR for label/runout photos, barcode + AI pressing ID | `OPENAI_API_KEY` |
+| **xAI (Grok)** | Second-opinion AI, cross-validation confidence | `XAI_API_KEY` |
+| **Telegram** | Notifications | `TELEGRAM_BOT_TOKEN` |
+| **Solana** | NFT minting for rare pressings | Wallet keypair |
+
+All keys for the v1 app are entered via **Settings** and stored in `localStorage`.  
+For the v2 app, keys are server-side env vars — see `REQUIRED_KEYS_AND_LOGINS.txt`.
+
+## Documentation
+
+- **[v2/README.md](v2/README.md)** — v2 Next.js app setup and routes.
+- **[ANDROID_BUILD.md](ANDROID_BUILD.md)** — Android TWA build guide (PWABuilder, GitHub Actions CI, local Gradle).
+- **[DISCOGS_API_INTEGRATION.md](DISCOGS_API_INTEGRATION.md)** — Discogs API implementation details.
+- **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KEYS_AND_LOGINS.txt)** — every API key and how to obtain it.
+- **[docs/COMPLETION_PLAN.md](docs/COMPLETION_PLAN.md)** — phased completion plan with priorities and acceptance criteria.
+- **[SECURITY.md](SECURITY.md)** — minimum security baseline and hardening checklist.
+- **[PRIVACY.md](PRIVACY.md)** — UK GDPR-oriented data handling and retention policy.
+- **[THREATMODEL.md](THREATMODEL.md)** — STRIDE threat model and mitigations.
