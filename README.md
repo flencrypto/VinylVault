@@ -104,12 +104,12 @@ Choose whichever method is easiest:
 **Option A — Download directly on your phone (simplest)**
 
 1. On your Android phone open Chrome (or any browser).
-2. Navigate to the [latest release APK](https://github.com/flencrypto/VinylVault/raw/main/releases/VinylVault-1.0.0-release.apk) — the download starts automatically.
+2. Navigate to the [latest release APK](https://github.com/flencrypto/VinylVault/raw/master/releases/VinylVault-1.0.0-release.apk) — the download starts automatically.
 3. The APK will land in your **Downloads** folder.
 
 **Option B — Transfer from your computer**
 
-1. Download [`VinylVault-1.0.0-release.apk`](https://github.com/flencrypto/VinylVault/raw/main/releases/VinylVault-1.0.0-release.apk) to your computer.
+1. Download [`VinylVault-1.0.0-release.apk`](https://github.com/flencrypto/VinylVault/raw/master/releases/VinylVault-1.0.0-release.apk) to your computer.
 2. Copy it to your phone using one of:
    - **USB cable** — connect the phone, switch to **File Transfer (MTP)** mode, and copy the APK to the phone's storage.
    - **Google Drive / Dropbox** — upload on your computer, open the Drive/Dropbox app on your phone, and tap **Download**.
