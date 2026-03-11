@@ -17,6 +17,12 @@ python -c "import flask" 2>&1
 if errorlevel 1 (
     echo Installing required packages...
     pip install flask flask-cors
+) else (
+    python -c "import flask_cors" 2>&1
+    if errorlevel 1 (
+        echo Installing flask-cors...
+        pip install flask-cors
+    )
 )
 
 REM Start the API server

@@ -111,30 +111,42 @@ class WebScrapingService {
     async _callPythonApi(params) {
         const apiUrl = 'http://localhost:5000/api/scrape';
         
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                marketplace: params.marketplace,
-                query: params.query,
-                maxResults: params.maxResults,
-                config: params.config
-            })
-        });
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    marketplace: params.marketplace,
+                    query: params.query,
+                    maxResults: params.maxResults,
+                    config: params.config
+                }),
+                // Add timeout to avoid hanging
+                signal: AbortSignal.timeout(30000) // 30 second timeout
+            });
 
-        if (!response.ok) {
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status} ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                throw new Error(result.error || 'API call failed');
+            }
+
+            return result.results;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error('API request timed out after 30 seconds');
+            }
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error('API server not reachable. Make sure the Python server is running on port 5000.');
+            }
+            throw error;
         }
-
-        const result = await response.json();
-        
-        if (!result.success) {
-            throw new Error(result.error || 'API call failed');
-        }
-
-        return result.results;
     }
 
     _formatEbayResults(data) {

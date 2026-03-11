@@ -5,7 +5,12 @@ Bridges JavaScript frontend with Python web scraping agent
 """
 
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+try:
+    from flask_cors import CORS
+    CORS_AVAILABLE = True
+except ImportError:
+    CORS_AVAILABLE = False
+    print("Warning: flask-cors not installed. CORS support disabled.")
 import asyncio
 import json
 import os
@@ -18,7 +23,16 @@ from advanced_web_scraper import create_scraper_agent
 from vinyl_scraper_example import VinylScraper
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend requests
+if CORS_AVAILABLE:
+    CORS(app)  # Enable CORS for frontend requests
+else:
+    # Basic CORS headers manually
+    @app.after_request
+    def after_request(response):
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
 
 class ScraperAPI:
     def __init__(self):
