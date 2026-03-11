@@ -1,48 +1,62 @@
 ---
 name: vinyl-pricing-intelligence
-description: 'Intelligent pricing analysis for vinyl records using historical data, condition grading, and AI-powered market insights. USE FOR: pricing vinyl records accurately, comparing against historical sales, analyzing market trends, generating pricing recommendations. DO NOT USE FOR: general pricing calculations, non-vinyl items, manual price entry.'
+description: 'Enhanced intelligent pricing analysis for vinyl records using ML patterns, weighted factors, and comprehensive market intelligence. USE FOR: sophisticated vinyl pricing, arbitrage detection, risk assessment, market trend analysis, investment recommendations. DO NOT USE FOR: general pricing calculations, non-vinyl items, manual price entry.'
 ---
 
-# Vinyl Pricing Intelligence Skill
+# Enhanced Vinyl Pricing Intelligence Skill
 
 ## Purpose
 
-This skill provides sophisticated pricing analysis for vinyl records by combining web-scraped data with historical sales data, condition grading, and AI-powered market insights. It bridges the gap between raw scraping data and intelligent deal-finding by providing accurate, defensible pricing recommendations.
+This enhanced skill provides sophisticated pricing analysis for vinyl records using machine learning patterns, weighted pricing factors, and comprehensive market intelligence. It goes beyond basic pricing to include arbitrage scoring, risk assessment, and investment recommendations.
 
-## Workflow
+## Enhanced Features
 
-### 1. Data Enrichment
-- Extract release details from scraped data (artist, title, year, country)
-- Cross-reference with Discogs database for release-specific information
-- Normalize condition grading across different platforms
-- Identify pressing variations and regional differences
+### 1. Advanced Data Normalization
+- Enhanced price parsing with currency detection
+- Fuzzy matching for condition grading
+- Genre and label detection with prestige multipliers
+- Age-based rarity factors with realistic scaling
 
-### 2. Historical Analysis
-- Query Discogs API for historical sales data
-- Filter by matching condition, pressing, and region
-- Calculate price trends and market averages
-- Identify seasonal patterns and market fluctuations
+### 2. ML-Powered Market Analysis
+- Linear regression for trend analysis
+- Market trend classification (strong_rising, rising, stable, falling, strong_falling)
+- Volatility assessment using statistical methods
+- Seasonal factor adjustments
 
-### 3. AI-Powered Analysis
-- Use Grok AI via XAI API to analyze market trends
-- Factor in rarity, demand, and collector interest
-- Consider current market conditions and economic factors
-- Generate pricing recommendations with confidence scores
+### 3. Weighted Pricing Factors
+- **Condition (30%)**: Fine-grained grading with 8 levels
+- **Genre (20%)**: Genre-specific base pricing
+- **Age (15%)**: Realistic age-based multipliers
+- **Label Prestige (15%)**: Prestigious label recognition
+- **Country (10%)**: Regional pricing adjustments
+- **Market Trend (10%)**: Current market dynamics
 
-### 4. Pricing Recommendation
-- Generate defensible asking price based on analysis
-- Provide pricing range (low, medium, high)
-- Include provenance metadata and justification
-- Flag arbitrage opportunities
+### 4. Enhanced Arbitrage Detection
+- Arbitrage scoring (0-1) based on profit margin
+- Absolute profit consideration
+- Confidence-based opportunity thresholds
+- Risk-adjusted arbitrage recommendations
+
+### 5. Comprehensive Risk Assessment
+- Market volatility analysis
+- Liquidity assessment by genre
+- Condition risk evaluation
+- Overall risk scoring
+
+### 6. Market Intelligence
+- Genre-specific market trends
+- Investment advice based on factors
+- Market timing recommendations
+- Collector interest analysis
 
 ## Integration Points
 
 This skill integrates with:
-- **Vinyl Web Scraping Skill**: Processes scraped listing data
+- **Vinyl Web Scraping Skill**: Processes enhanced scraped data
 - **Discogs Service**: Accesses historical sales data
 - **XAI/Grok API**: Provides AI-powered market analysis
-- **Deal Finder**: Identifies underpriced opportunities
-- **Collection Management**: Updates record valuations
+- **Deal Finder**: Enhanced arbitrage detection with scoring
+- **Collection Management**: Comprehensive record valuations
 
 ## Usage Examples
 
@@ -50,37 +64,41 @@ This skill integrates with:
 from pricing_intelligence import analyze_vinyl_pricing
 
 scraped_data = {
-    'title': 'The Beatles - Abbey Road',
+    'title': 'Heliodor HS 2527 Classical LP',
     'condition': 'Very Good+',
-    'price': '$45.99',
-    'year': '1969',
-    'country': 'UK'
+    'price': '$25.00',
+    'year': '1960',
+    'country': 'England',
+    'label': 'Heliodor',
+    'genre': 'Classical'
 }
 
 analysis = analyze_vinyl_pricing(scraped_data)
-print(f"Recommended price: {analysis['recommended_price']}")
-print(f"Market trend: {analysis['market_trend']}")
+print(f"Recommended price: ${analysis.recommended_price}")
+print(f"Arbitrage score: {analysis.arbitrage_score:.1%}")
+print(f"Risk assessment: {analysis.risk_assessment['overall']}")
 ```
 
-## Data Points Analyzed
+## Enhanced Data Points Analyzed
 
-- **Release Details**: Artist, title, year, country, label
-- **Condition Grading**: Mint, Near Mint, Very Good, Good, Poor
-- **Historical Prices**: Last sold prices, price trends
-- **Market Factors**: Rarity, demand, collector interest
-- **Current Market**: Economic conditions, seasonal trends
+- **Enhanced Release Details**: Artist, title, year, country, label, format
+- **Advanced Condition Grading**: 8-level system with finer granularity
+- **Historical Analysis**: ML-powered trend detection
+- **Market Intelligence**: Genre trends, investment advice, timing
+- **Risk Factors**: Volatility, liquidity, condition risks
+- **Pricing Factors**: Weighted factors influencing final price
 
 ## Best Practices
 
-- Always validate scraped data against Discogs database
-- Use multiple data sources for price validation
-- Consider regional pricing differences
-- Factor in shipping costs and seller reputation
-- Update pricing recommendations regularly
+- Use enhanced data normalization for accurate parsing
+- Consider all weighted factors in pricing decisions
+- Monitor market trends with ML-powered analysis
+- Assess risk before pursuing arbitrage opportunities
+- Update pricing models regularly based on market changes
 
 ## Security Considerations
 
-- Handle API keys securely
-- Cache historical data to reduce API calls
-- Implement rate limiting for external APIs
-- Validate all external data sources
+- Enhanced API key management
+- Statistical analysis reduces dependency on external APIs
+- Comprehensive error handling for data validation
+- Cache market intelligence for performance

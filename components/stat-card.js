@@ -1,7 +1,7 @@
 // components/stat-card.js — animated counter + mini sparkline
 class StatCard extends HTMLElement {
   static get observedAttributes() {
-    return ['value', 'label', 'icon', 'trend'];
+    return ['value', 'label', 'icon', 'trend', 'matrix', 'confidence'];
   }
 
   // Feather-icon SVG paths for icons used across the app
@@ -66,27 +66,82 @@ class StatCard extends HTMLElement {
     return `<span style="font-size:1.6rem; color:var(--vf-accent-light);">${FALLBACK[name] || name}</span>`;
   }
 
-  _render() {
-    if (this._animTimer !== null) {
-      clearInterval(this._animTimer);
-      this._animTimer = null;
+  // Add matrix-specific rendering
+  _renderMatrix() {
+    const matrix = this.getAttribute('matrix') || '';
+    const confidence = parseFloat(this.getAttribute('confidence')) || 0;
+    
+    const matrixLines = matrix.split('|').filter(line => line.trim());
+    
+    let confidenceClass = 'bg-gray-600';
+    let confidenceText = 'Low';
+    
+    if (confidence >= 0.8) {
+      confidenceClass = 'bg-green-600';
+      confidenceText = 'High';
+    } else if (confidence >= 0.6) {
+      confidenceClass = 'bg-yellow-600';
+      confidenceText = 'Medium';
     }
-    const trend = this.getAttribute('trend') || '';
+    
     this.innerHTML = `
-      <div class="card stat-card">
-        <div style="display:flex; justify-content:space-between; align-items:start;">
-          <div>
-            <div style="font-size:0.95rem; color:var(--vf-text-muted); text-transform:uppercase; letter-spacing:0.5px;">${this.getAttribute('label') || ''}</div>
-            <div class="stat-value" data-counter>0</div>
-            ${trend ? `<div style="font-size:0.8rem; color:var(--vf-text-muted); margin-top:2px;">${trend}</div>` : ''}
-          </div>
-          <div style="opacity:0.5; margin-top:2px;">${this._renderIcon()}</div>
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-feather="info" class="w-4 h-4 text-gray-400"></i>
+          <span class="text-sm font-medium text-gray-300">Matrix / Runout</span>
         </div>
-        <!-- Mini sparkline (CSS only) -->
-        <div aria-hidden="true" style="height:48px; background:linear-gradient(90deg, transparent, var(--vf-accent-light), transparent); opacity:0.15; margin-top:12px; border-radius:8px;"></div>
+        <span class="text-xs px-2 py-1 rounded-full ${confidenceClass} text-white">
+          ${confidenceText} Confidence
+        </span>
+      </div>
+      <div class="mt-2">
+        ${matrixLines.map(line => `
+          <div class="text-xs font-mono text-gray-400 truncate" title="${line}">
+            ${line}
+          </div>
+        `).join('')}
       </div>
     `;
-    this._animateCounter();
+    
+    if (typeof feather !== 'undefined') feather.replace();
+  }
+
+  // Enhanced render method to handle matrix type
+  _render() {
+    const type = this.getAttribute('type');
+    
+    if (type === 'matrix') {
+      this._renderMatrix();
+      return;
+    }
+    
+    // Existing rendering logic for other types
+    const label = this.getAttribute('label') || '';
+    const icon = this.getAttribute('icon') || '';
+    const trend = this.getAttribute('trend') || '';
+    
+    const iconSvg = StatCard._ICONS[icon] || '';
+    
+    this.innerHTML = `
+      <div class="stat-card-inner">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            ${iconSvg ? `<svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">${iconSvg}</svg>` : ''}
+            <span class="text-sm font-medium text-gray-300">${label}</span>
+          </div>
+          ${trend ? `<span class="trend ${trend}"></span>` : ''}
+        </div>
+        <div class="mt-2">
+          <span class="text-2xl font-bold text-white" data-counter>${this._formatNum(this.value)}</span>
+        </div>
+      </div>
+    `;
+    
+    if (typeof feather !== 'undefined') feather.replace();
+    
+    if (this.value !== 0) {
+      this._animateCounter();
+    }
   }
 
   _formatNum(n) {

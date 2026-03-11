@@ -89,6 +89,71 @@ class CollectionService {
   recordExists(artist, title, catalogueNumber) {
     return !!this.findRecord(artist, title, catalogueNumber);
   }
+
+  // Scan dead wax/matrix from image
+  async scanDeadWax(imageFile, recordIndex = null) {
+    try {
+      // Use enhanced OCR service for matrix extraction
+      const ocrService = window.enhancedOCRService || {
+        extractMatrixFromImage: async (file) => {
+          // Fallback implementation
+          return {
+            matrix: ["Matrix extraction not available"],
+            confidence: 0.5,
+          };
+        },
+      };
+
+      const result = await ocrService.extractMatrixFromImage(imageFile);
+
+      if (recordIndex !== null) {
+        // Update existing record
+        const collection = this.getCollection();
+        if (collection[recordIndex]) {
+          collection[recordIndex].matrix = result.matrix;
+          collection[recordIndex].matrixConfidence = result.confidence;
+          collection[recordIndex].lastUpdated = new Date().toISOString();
+          this.saveCollection(collection);
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Error scanning dead wax:", error);
+      throw error;
+    }
+  }
+
+  // Calculate pressing match score based on matrix data
+  calculatePressingMatchScore(matrix, matrixConfidence) {
+    if (!matrix || matrix.length === 0) return 0;
+
+    // Base score on confidence and matrix complexity
+    let score = matrixConfidence * 0.7; // 70% weight to OCR confidence
+
+    // Bonus for having multiple matrix lines
+    if (matrix.length > 1) {
+      score += 0.2; // 20% bonus for multiple identifiers
+    }
+
+    // Bonus for complex matrix patterns
+    const complexPatterns = [
+      "XEX",
+      "YEX",
+      "ZEX",
+      "AAX",
+      "BBX",
+      "STERLING",
+      "RL",
+      "PORKY",
+    ];
+    const matrixText = matrix.join(" ").toUpperCase();
+    if (complexPatterns.some((pattern) => matrixText.includes(pattern))) {
+      score += 0.1; // 10% bonus for known pressing identifiers
+    }
+
+    return Math.min(score, 1.0);
+  }
 }
 
 window.collectionService = new CollectionService();
