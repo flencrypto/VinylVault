@@ -5,6 +5,12 @@ dist/
 .env.local
 .env.*.local
 
+# Python build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
 # v2 Next.js build artifacts
 v2/.next/
 v2/node_modules/
