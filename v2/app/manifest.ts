@@ -1,0 +1,97 @@
+import type { MetadataRoute } from "next"
+
+export default function manifest(): MetadataRoute.Manifest {
+  return {
+    name: "VinylVault Pro",
+    short_name: "VinylVault",
+    description:
+      "Professional eBay listing generator, deal finder and collection manager for vinyl records",
+    id: "/?source=pwa",
+    start_url: "/?source=pwa",
+    display: "standalone",
+    background_color: "#0e0c0b",
+    theme_color: "#c8973f",
+    orientation: "any",
+    lang: "en",
+    dir: "ltr",
+    scope: "/",
+    categories: ["music", "shopping", "utilities"],
+    icons: [
+      {
+        src: "/static/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/static/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/static/icon-512-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      {
+        src: "/static/icon-192.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/static/icon-512.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ],
+    screenshots: [
+      {
+        src: "/static/screenshot-mobile.svg",
+        sizes: "390x844",
+        type: "image/svg+xml",
+        form_factor: "narrow",
+        label: "VinylVault Pro — Create eBay listings from your vinyl records",
+      },
+      {
+        src: "/static/screenshot-desktop.svg",
+        sizes: "1280x800",
+        type: "image/svg+xml",
+        form_factor: "wide",
+        label: "VinylVault Pro — Deal finder and collection manager",
+      },
+    ],
+    shortcuts: [
+      {
+        name: "Create Listing",
+        short_name: "Listing",
+        description: "Create a new eBay listing for a vinyl record",
+        url: "/?source=shortcut",
+        icons: [
+          { src: "/static/icon-192.png", sizes: "192x192", type: "image/png" },
+        ],
+      },
+      {
+        name: "Deal Finder",
+        short_name: "Deals",
+        description: "Find underpriced vinyl deals on eBay",
+        url: "/deals?source=shortcut",
+        icons: [
+          { src: "/static/icon-192.png", sizes: "192x192", type: "image/png" },
+        ],
+      },
+      {
+        name: "My Collection",
+        short_name: "Collection",
+        description: "Browse and manage your vinyl record collection",
+        url: "/collection?source=shortcut",
+        icons: [
+          { src: "/static/icon-192.png", sizes: "192x192", type: "image/png" },
+        ],
+      },
+    ],
+  }
+}
