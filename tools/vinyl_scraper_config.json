@@ -1,0 +1,100 @@
+{
+  "vinyl_marketplaces": {
+    "ebay": {
+      "base_url": "https://www.ebay.com/sch/i.html",
+      "search_params": "_nkw={query}&_sacat=176985",
+      "selectors": {
+        "listing_container": ".s-item",
+        "title": ".s-item__title",
+        "price": ".s-item__price",
+        "condition": ".s-item__subtitle",
+        "shipping": ".s-item__shipping",
+        "seller": ".s-item__seller",
+        "image": ".s-item__image-img",
+        "time_left": ".s-item__time-left"
+      },
+      "recommended_config": "advanced",
+      "rate_limit": 2,
+      "required_delay": 3.0
+    },
+    "discogs": {
+      "base_url": "https://www.discogs.com/search/",
+      "search_params": "q={query}&type=release",
+      "selectors": {
+        "listing_container": ".card",
+        "artist": ".card__artist",
+        "title": ".card__title",
+        "year": ".card__year",
+        "label": ".card__label",
+        "format": ".card__format",
+        "condition": ".card__condition",
+        "price": ".card__price",
+        "seller": ".card__seller"
+      },
+      "recommended_config": "stealth",
+      "rate_limit": 1,
+      "required_delay": 5.0
+    },
+    "amazon": {
+      "base_url": "https://www.amazon.com/s",
+      "search_params": "k={query}&i=music",
+      "selectors": {
+        "listing_container": ".s-result-item",
+        "title": ".a-text-normal",
+        "artist": ".a-color-secondary",
+        "price": ".a-price-whole",
+        "condition": ".a-text-bold",
+        "shipping": ".a-color-base",
+        "seller": ".a-row.a-size-base",
+        "image": ".s-image"
+      },
+      "recommended_config": "stealth",
+      "rate_limit": 1,
+      "required_delay": 4.0
+    }
+  },
+  "vinyl_data_fields": {
+    "required": ["artist", "album", "price", "condition"],
+    "optional": ["year", "label", "format", "seller", "shipping", "image_url"],
+    "pricing": ["current_price", "original_price", "shipping_cost", "total_price"],
+    "condition_grades": ["Mint", "Near Mint", "Very Good+", "Very Good", "Good", "Fair", "Poor"]
+  },
+  "scraping_strategies": {
+    "price_monitoring": {
+      "description": "Continuous price monitoring for specific vinyl releases",
+      "interval": 3600,
+      "config": "stealth",
+      "proxy_rotation": true,
+      "cache_duration": 1800
+    },
+    "market_analysis": {
+      "description": "Broad market analysis for vinyl trends",
+      "interval": 86400,
+      "config": "advanced",
+      "proxy_rotation": false,
+      "cache_duration": 3600
+    },
+    "inventory_scraping": {
+      "description": "Scraping seller inventories for rare finds",
+      "interval": 7200,
+      "config": "stealth",
+      "proxy_rotation": true,
+      "cache_duration": 2400
+    }
+  },
+  "vinyl_specific_config": {
+    "max_listings_per_search": 100,
+    "min_price_threshold": 5.0,
+    "max_price_threshold": 1000.0,
+    "condition_mapping": {
+      "M": "Mint",
+      "NM": "Near Mint", 
+      "VG+": "Very Good+",
+      "VG": "Very Good",
+      "G": "Good",
+      "F": "Fair",
+      "P": "Poor"
+    },
+    "format_categories": ["LP", "7\"", "12\"", "CD", "Cassette", "Box Set"]
+  }
+}
