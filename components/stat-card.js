@@ -66,41 +66,86 @@ class StatCard extends HTMLElement {
     return `<span style="font-size:1.6rem; color:var(--vf-accent-light);">${FALLBACK[name] || name}</span>`;
   }
 
-  // Add matrix-specific rendering
+  // Enhanced matrix-specific rendering with provenance indicators
   _renderMatrix() {
     const matrix = this.getAttribute('matrix') || '';
     const confidence = parseFloat(this.getAttribute('confidence')) || 0;
+    const pressingType = this.getAttribute('pressing-type') || '';
+    const rarity = this.getAttribute('rarity') || '';
     
     const matrixLines = matrix.split('|').filter(line => line.trim());
     
+    // Confidence styling
     let confidenceClass = 'bg-gray-600';
     let confidenceText = 'Low';
+    let confidenceIcon = 'alert-circle';
     
     if (confidence >= 0.8) {
       confidenceClass = 'bg-green-600';
       confidenceText = 'High';
+      confidenceIcon = 'check-circle';
     } else if (confidence >= 0.6) {
       confidenceClass = 'bg-yellow-600';
       confidenceText = 'Medium';
+      confidenceIcon = 'alert-triangle';
+    }
+    
+    // Pressing type styling
+    let pressingClass = 'bg-blue-600';
+    let pressingText = pressingType || 'Unknown';
+    if (pressingType.includes('First')) {
+      pressingClass = 'bg-purple-600';
+    } else if (pressingType.includes('Reissue')) {
+      pressingClass = 'bg-orange-600';
     }
     
     this.innerHTML = `
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
-          <i data-feather="info" class="w-4 h-4 text-gray-400"></i>
-          <span class="text-sm font-medium text-gray-300">Matrix / Runout</span>
+          <i data-feather="disc" class="w-4 h-4 text-vf-primary"></i>
+          <span class="text-sm font-medium text-gray-300">Matrix Analysis</span>
         </div>
-        <span class="text-xs px-2 py-1 rounded-full ${confidenceClass} text-white">
-          ${confidenceText} Confidence
+        <div class="flex items-center gap-2">
+          <span class="text-xs px-2 py-1 rounded-full ${confidenceClass} text-white flex items-center gap-1">
+            <i data-feather="${confidenceIcon}" class="w-3 h-3"></i>
+            ${confidenceText}
+          </span>
+        </div>
+      </div>
+      
+      ${pressingType ? `
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-400">Pressing Type</span>
+        <span class="text-xs px-2 py-1 rounded-full ${pressingClass} text-white">
+          ${pressingText}
         </span>
       </div>
+      ` : ''}
+      
+      ${rarity ? `
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-xs text-gray-400">Rarity Indicator</span>
+        <span class="text-xs px-2 py-1 rounded-full bg-vf-accent text-vf-surface">
+          ${rarity}
+        </span>
+      </div>
+      ` : ''}
+      
       <div class="mt-2">
+        <div class="text-xs text-gray-400 mb-1">Extracted Runout Data:</div>
         ${matrixLines.map(line => `
-          <div class="text-xs font-mono text-gray-400 truncate" title="${line}">
+          <div class="text-xs font-mono text-gray-300 bg-vf-surface-light p-2 rounded mb-1 border border-vf-border" title="${line}">
             ${line}
           </div>
         `).join('')}
       </div>
+      
+      ${confidence < 0.8 ? `
+      <div class="mt-3 text-xs text-yellow-400 flex items-center gap-1">
+        <i data-feather="alert-triangle" class="w-3 h-3"></i>
+        Review recommended for accuracy
+      </div>
+      ` : ''}
     `;
     
     if (typeof feather !== 'undefined') feather.replace();
@@ -142,6 +187,48 @@ class StatCard extends HTMLElement {
     if (this.value !== 0) {
       this._animateCounter();
     }
+  }
+
+  // Add matrix-specific rendering
+  _renderMatrix() {
+    const matrix = this.getAttribute('matrix') || '';
+    const confidence = parseFloat(this.getAttribute('confidence')) || 0;
+    
+    const matrixLines = matrix.split('|').filter(line => line.trim());
+    
+    let confidenceClass = 'bg-gray-600';
+    let confidenceText = 'Low';
+    
+    if (confidence >= 0.8) {
+      confidenceClass = 'bg-green-600';
+      confidenceText = 'High';
+    } else if (confidence >= 0.6) {
+      confidenceClass = 'bg-yellow-600';
+      confidenceText = 'Medium';
+    }
+    
+    this.innerHTML = `
+      <div class="stat-card-inner">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-feather="info" class="w-4 h-4 text-gray-400"></i>
+            <span class="text-sm font-medium text-gray-300">Matrix / Runout</span>
+          </div>
+          <span class="text-xs px-2 py-1 rounded-full ${confidenceClass} text-white">
+            ${confidenceText} Confidence
+          </span>
+        </div>
+        <div class="mt-2">
+          ${matrixLines.map(line => `
+            <div class="text-xs font-mono text-gray-400 truncate" title="${line}">
+              ${line}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    
+    if (typeof feather !== 'undefined') feather.replace();
   }
 
   _formatNum(n) {

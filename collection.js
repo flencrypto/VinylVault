@@ -1349,7 +1349,7 @@ ${
         </div>
         <div class="p-6 overflow-y-auto max-h-[70vh]">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Left: Photos -->
+                <!-- Left: Photos & Camera Capture -->
                 <div>
                     ${
                       record.photos[0]
@@ -1368,6 +1368,55 @@ ${
                     `
                         : '<div class="aspect-square bg-surface rounded-xl flex items-center justify-center text-gray-600"><i data-feather="disc" class="w-16 h-16"></i></div>'
                     }
+                    
+                    <!-- Camera Capture Section -->
+                    <div class="mt-4 bg-surface/60 border border-gray-700 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                            <i data-feather="camera" class="w-4 h-4"></i>
+                            Capture Matrix/Runout Photos
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <!-- Camera Preview -->
+                            <div id="cameraPreview_${index}" class="aspect-video bg-black rounded-lg border border-gray-600 flex items-center justify-center hidden">
+                                <video id="cameraVideo_${index}" autoplay playsinline class="w-full h-full object-cover rounded-lg"></video>
+                                <canvas id="cameraCanvas_${index}" class="hidden"></canvas>
+                            </div>
+                            
+                            <!-- Camera Controls -->
+                            <div class="flex gap-2">
+                                <button onclick="startCamera(${index})" class="px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-all flex items-center gap-2">
+                                    <i data-feather="camera" class="w-4 h-4"></i>
+                                    Open Camera
+                                </button>
+                                <button onclick="capturePhoto(${index})" id="captureBtn_${index}" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all flex items-center gap-2 hidden">
+                                    <i data-feather="aperture" class="w-4 h-4"></i>
+                                    Capture
+                                </button>
+                                <button onclick="stopCamera(${index})" id="stopBtn_${index}" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-all flex items-center gap-2 hidden">
+                                    <i data-feather="x" class="w-4 h-4"></i>
+                                    Close
+                                </button>
+                            </div>
+                            
+                            <!-- OCR Results Preview -->
+                            <div id="ocrPreview_${index}" class="bg-surface-light p-3 rounded-lg border border-gray-600 hidden">
+                                <h5 class="text-xs font-medium text-gray-400 mb-2">OCR Results</h5>
+                                <div id="ocrText_${index}" class="text-sm text-gray-300 font-mono max-h-20 overflow-y-auto"></div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-xs text-gray-500">Confidence:</span>
+                                    <span id="ocrConfidence_${index}" class="text-xs px-2 py-1 rounded-full bg-gray-600 text-white">Processing...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- File Upload Fallback -->
+                            <div class="border-t border-gray-600 pt-3 mt-3">
+                                <label class="text-xs text-gray-400 mb-2 block">Or upload photos:</label>
+                                <input type="file" id="photoUpload_${index}" accept="image/*" multiple class="w-full text-sm text-gray-300"
+                                       onchange="handlePhotoUpload(${index}, this.files)">
+                            </div>
+                        </div>
+                    </div>
                     
                     ${marketDataHtml}
                 </div>
