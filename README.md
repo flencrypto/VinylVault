@@ -272,10 +272,47 @@ Required API keys are documented in **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KE
 All keys for the v1 app are entered via **Settings** and stored in `localStorage`.  
 For the v2 app, keys are server-side env vars — see `REQUIRED_KEYS_AND_LOGINS.txt`.
 
+## Troubleshooting
+
+### 401 Unauthorized Error on Netlify
+
+If you encounter a `401 Unauthorized` error when accessing the deployed site at `https://vinyltrader.netlify.app/`, this indicates that **password protection** or **visitor access control** is enabled at the Netlify platform level.
+
+**Symptoms:**
+- Site returns `HTTP/2 401` instead of `HTTP/2 200`
+- PWA analysis tools (like PWABuilder) cannot access the site
+- Service worker and manifest detection fails
+- External integrations cannot fetch site content
+
+**Solution:**
+
+1. Log into your Netlify account at https://app.netlify.com
+2. Navigate to your site settings
+3. Go to **Site settings** → **Access control**
+4. In the **Visitor access** section:
+   - If "Password protection" is enabled, click **Remove password**
+   - If "OAuth" is enabled, disable it or switch to "Public"
+5. Save changes and wait 1-2 minutes for propagation
+6. Verify with: `curl -I https://vinyltrader.netlify.app/`
+
+For detailed troubleshooting steps and alternative solutions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+**Note:** This is NOT a code-level issue. The HTTP 401 behavior is caused by Netlify access control settings, not by `netlify.toml` or application code. Password protection and OAuth are deployment settings managed in the Netlify UI and must be changed there.
+
+### API Key Issues
+
+If you're getting errors related to Discogs, eBay, or AI services:
+
+1. Check that all required API keys are configured (see **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KEYS_AND_LOGINS.txt)**)
+2. For v1 (PWA), enter keys via the **Settings** page
+3. For v2 (Next.js), add keys to `.env.local`
+4. Verify keys are valid by testing each integration in Settings
+
 ## Documentation
 
 - **[v2/README.md](v2/README.md)** — v2 Next.js app setup and routes.
 - **[ANDROID_BUILD.md](ANDROID_BUILD.md)** — Android TWA build guide (PWABuilder, GitHub Actions CI, local Gradle).
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** — Netlify deployment guide and troubleshooting.
 - **[DISCOGS_API_INTEGRATION.md](DISCOGS_API_INTEGRATION.md)** — Discogs API implementation details.
 - **[REQUIRED_KEYS_AND_LOGINS.txt](REQUIRED_KEYS_AND_LOGINS.txt)** — every API key and how to obtain it.
 - **[docs/COMPLETION_PLAN.md](docs/COMPLETION_PLAN.md)** — phased completion plan with priorities and acceptance criteria.
