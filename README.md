@@ -297,7 +297,7 @@ If you encounter a `401 Unauthorized` error when accessing the deployed site at 
 
 For detailed troubleshooting steps and alternative solutions, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
-**Note:** This is NOT a code-level issue. The repository configuration in `netlify.toml` is correct. The password protection is a deployment setting in the Netlify UI that must be changed there.
+**Note:** This is NOT a code-level issue. The HTTP 401 behavior is caused by Netlify access control settings, not by `netlify.toml` or application code. Password protection and OAuth are deployment settings managed in the Netlify UI and must be changed there.
 
 ### API Key Issues
 
