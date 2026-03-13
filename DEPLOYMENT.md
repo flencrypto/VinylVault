@@ -151,7 +151,7 @@ Example:
 Security headers are configured in `netlify.toml` for:
 
 - All pages (`/*`) - Frame protection, content type sniffing prevention
-- Manifest file (`/manifest.json`) - Correct content type
+- Manifest files (`/manifest.webmanifest` - canonical, `/manifest.json` - legacy/alias) - Correct content type
 - Asset links (`/.well-known/assetlinks.json`) - Android TWA verification
 - Static assets (`/static/*`) - Aggressive caching
 
