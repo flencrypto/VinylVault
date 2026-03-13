@@ -85,11 +85,13 @@ If you're removing password protection:
 
 1. ✅ The site uses HTTPS (enforced by Netlify)
 2. ✅ Security headers are configured in `netlify.toml`
-3. ✅ API keys are not exposed in client-side code (use environment variables)
-4. ✅ Frame protection (`X-Frame-Options: DENY`) prevents clickjacking
-5. ✅ Content type sniffing is disabled (`X-Content-Type-Options: nosniff`)
+3. ✅ No API keys or other secrets are committed to this repository
+4. ✅ In the current v1 static PWA, any API keys are entered by each user in the browser and stored locally (for example, in `localStorage`) as per‑user settings; they are not shared between users or stored on the server
+5. ✅ In v2 (server‑backed) deployments, API keys are provided via server‑side environment variables and are never embedded in the client bundle
+6. ✅ Frame protection (`X-Frame-Options: DENY`) prevents clickjacking
+7. ✅ Content type sniffing is disabled (`X-Content-Type-Options: nosniff`)
 
-The site is safe to make public as long as sensitive API keys remain in environment variables.
+With these constraints, the repository and deployed site are safe to make public from a deployment perspective: no secrets are stored in version control, and in v1 any keys users choose to enter are stored only in their own browser as client‑side settings (not as protected server‑side environment variables).
 
 ### Support
 
