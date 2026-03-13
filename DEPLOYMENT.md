@@ -105,13 +105,15 @@ If you continue to see 401 errors after removing password protection:
 
 ### Environment Variables
 
-The following environment variables should be configured in Netlify:
+The following environment variables are used by the **v2 Next.js app / server-side deployments** or by **build-time tooling**. Configure them in Netlify (or your chosen hosting environment) only for those deployments:
 
 - `EBAY_CLIENT_ID` - eBay API client ID
 - `EBAY_CLIENT_SECRET` - eBay API client secret
 - `DISCOGS_USER_TOKEN` - Discogs API token
 - `OPENAI_API_KEY` - OpenAI API key (optional)
 - `XAI_API_KEY` - xAI/Grok API key (optional)
+
+> Note: The current production site at `https://vinyltrader.netlify.app/` is the **v1 static PWA**, which reads API keys from the in‑app **Settings** (client-side). Setting these variables in Netlify alone will **not** resolve 401 errors on the v1 static PWA deployment.
 
 ### Build Settings
 
