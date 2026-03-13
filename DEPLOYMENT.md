@@ -31,15 +31,15 @@ The 401 error is caused by **Netlify password protection** or **visitor access c
 
 You should see `HTTP/2 200` instead of `HTTP/2 401`.
 
-#### Option 2: Whitelist Specific User Agents
+#### Option 2: Temporarily Disable Protection for Analysis Tools
 
-If you need to keep password protection but allow specific tools:
+If you need to keep password protection in general but allow tools like PWABuilder, SEO crawlers, or integration tests to run:
 
-1. Create a `_headers` file in the root of your repository
-2. Add rules to bypass authentication for specific user agents
-3. Commit and deploy
-
-**Note:** Netlify's password protection applies at the CDN level and cannot be bypassed by headers alone. You'll need to use **branch deploys** or **deploy contexts**.
+1. In Netlify, go to **Site settings** → **Access control**.
+2. Temporarily disable **Password protection** / visitor access control for the site.
+3. Wait 1–2 minutes for the change to propagate.
+4. Run your external tools (PWABuilder, lighthouse, SEO scans, etc.) against the site URL.
+5. Once analysis is complete, re‑enable **Password protection** to restore restricted access.
 
 #### Option 3: Use Branch Deploys with Public Access
 
