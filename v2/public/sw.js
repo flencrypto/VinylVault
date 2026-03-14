@@ -68,7 +68,11 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match("/offline").then((r) => r || caches.match("/")))
+        .catch(() =>
+          caches
+            .match("/offline")
+            .then((cached) => cached || caches.match("/"))
+        )
     );
     return;
   }
