@@ -198,3 +198,22 @@ progress {
   height: 6px;
   border-radius: 9999px;
 }
+
+/* Confidence badges — used in stat-card, auto-matrix, collection detail */
+.confidence-badge {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-left: 8px;
+  font-weight: 600;
+}
+.confidence-badge.high   { background: var(--vf-accent); color: #0e0c0b; }
+.confidence-badge.medium { background: #f59e0b; color: #0e0c0b; }
+.confidence-badge.low    { background: #ef4444; color: #f5ede2; }
+
+/* Matrix row in stat card / collection detail */
+.matrix-row {
+  border-top: 1px solid rgba(245, 237, 226, 0.1);
+  padding-top: 8px;
+  margin-top: 8px;
+}
