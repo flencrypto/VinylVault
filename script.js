@@ -313,6 +313,38 @@ async function addPhotos(files) {
   ) {
     showToast("Add AI API key in Settings for auto-detection", "warning");
   }
+
+  // Auto-trigger matrix extraction on newly added photos
+  if (localStorage.getItem("openai_api_key") && window.enhancedOcrService) {
+    for (const file of files) {
+      try {
+        const matrixResult = await window.enhancedOcrService.extractMatrixFromImage(file);
+        if (matrixResult.matrix.length > 0) {
+          const container = document.getElementById("autoMatrixResult");
+          const linesEl = document.getElementById("autoMatrixLines");
+          const badgeEl = document.getElementById("autoMatrixBadge");
+          if (container && linesEl) {
+            container.classList.remove("hidden");
+            linesEl.innerHTML = matrixResult.matrix
+              .map(l => `<div>${l}</div>`).join("");
+            if (badgeEl) {
+              const cls = matrixResult.confidence > 70 ? "high"
+                : matrixResult.confidence > 40 ? "medium" : "low";
+              badgeEl.className = `confidence-badge ${cls}`;
+              badgeEl.textContent = `${matrixResult.confidence}% OCR`;
+            }
+          }
+          // Store in current listing draft
+          if (!window.currentListingDraft) window.currentListingDraft = {};
+          window.currentListingDraft.matrix = matrixResult.matrix;
+          window.currentListingDraft.matrixConfidence = matrixResult.confidence;
+          break; // Only process first relevant photo
+        }
+      } catch (err) {
+        console.debug("[AutoMatrix] Extraction skipped:", err.message);
+      }
+    }
+  }
 }
 async function uploadPhotosToImgBB(files) {
   const apiKey = localStorage.getItem("imgbb_api_key");

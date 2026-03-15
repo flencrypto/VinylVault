@@ -164,6 +164,87 @@ Be thorough and precise. Read every visible character. For pressing identificati
     });
   }
 
+  /**
+   * Specialized matrix/runout extraction from dead-wax or inner-label photos.
+   * Uses GPT-4o vision with a focused prompt for matrix-only extraction.
+   * Falls back to a minimal result when no API key is configured.
+   * @param {File|Blob} imageInput
+   * @param {Object}  [options]
+   * @returns {Promise<{matrix: string[], raw: string, confidence: number, sideHints: string[]}>}
+   */
+  async extractMatrixFromImage(imageInput, options = {}) {
+    if (!this.apiKey) {
+      console.warn("[EnhancedOCR] No API key — matrix extraction unavailable");
+      return { matrix: [], raw: "", confidence: 0, sideHints: [] };
+    }
+
+    const base64 = await this.fileToBase64(imageInput);
+
+    const messages = [
+      {
+        role: "system",
+        content: `You are a vinyl record dead-wax / runout groove reading specialist.
+Extract ONLY the etched/stamped matrix and runout numbers visible in the image.
+Return a JSON object with:
+{
+  "matrixLines": ["line1", "line2"],
+  "sides": ["A", "B"],
+  "confidence": 85
+}
+Rules:
+- Each matrixLines entry is one distinct identifier string exactly as etched.
+- sides array maps 1:1 with matrixLines (which side each belongs to).
+- confidence is 0-100 integer reflecting how readable the etching is.
+- Ignore label-printed text — only report etched/stamped runout groove data.
+- If nothing is visible, return empty arrays and confidence 0.`
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Extract the dead-wax matrix/runout numbers from this photo." },
+          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}`, detail: "high" } }
+        ]
+      }
+    ];
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages,
+          max_tokens: 500,
+          temperature: 0.1
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error?.message || "Matrix extraction API call failed");
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})/);
+      const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : content;
+      const parsed = JSON.parse(jsonStr.trim());
+
+      return {
+        matrix: parsed.matrixLines || [],
+        raw: (parsed.matrixLines || []).join("\n"),
+        confidence: parsed.confidence || 0,
+        sideHints: parsed.sides || []
+      };
+    } catch (err) {
+      console.error("[EnhancedOCR] Matrix extraction failed:", err);
+      return { matrix: [], raw: "", confidence: 0, sideHints: [] };
+    }
+  }
+
   updateApiKey(key) {
     this.apiKey = key;
   }
