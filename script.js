@@ -338,7 +338,7 @@ async function addPhotos(files) {
           if (!window.currentListingDraft) window.currentListingDraft = {};
           window.currentListingDraft.matrix = matrixResult.matrix;
           window.currentListingDraft.matrixConfidence = matrixResult.confidence;
-          break; // Only process first relevant photo
+          break; // Process only the first photo with detected matrix
         }
       } catch (err) {
         console.debug("[AutoMatrix] Extraction skipped:", err.message);

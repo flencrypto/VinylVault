@@ -309,7 +309,7 @@ class PricingIntelligenceService extends HTMLElement {
     const results = await ebayService.searchListings(keywords, {
       limit: 20,
       sort: "newlyListed",
-      filter: `conditionIds:{3000}`,   // 3000 = "Used" in eBay condition IDs
+      filter: conditionFilter === "Used" ? "conditionIds:{3000}" : "",
     });
 
     if (!results || results.length === 0) return null;
@@ -435,7 +435,7 @@ class PricingIntelligenceService extends HTMLElement {
         country: releaseMetadata.country,
         provenance: {
           notes: (releaseMetadata.notes || "").substring(0, 500) +
-                 (releaseMetadata.notes && releaseMetadata.notes.length > 500 ? "…" : ""),
+                 ((releaseMetadata.notes || "").length > 500 ? "…" : ""),
           matrixNumbers: releaseMetadata.matrixNumbers,
           printer: releaseMetadata.printer,
           credits: (releaseMetadata.credits || []).slice(0, 8),

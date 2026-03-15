@@ -229,7 +229,7 @@ Rules:
 
       const data = await response.json();
       const content = data.choices[0].message.content;
-      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})/);
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|(\{[\s\S]*?\})\s*$/);
       const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[2]) : content;
       const parsed = JSON.parse(jsonStr.trim());
 
