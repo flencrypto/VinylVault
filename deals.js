@@ -1,5 +1,65 @@
 // Deal Finder Logic
 
+// ─── Deal Finder Search Persistence ─────────────────────────────────────────
+const DEAL_SEARCH_CACHE_KEY = "vinyl_deal_search_v1";
+const DEAL_SEARCH_FIELD_IDS = [
+  "ebaySearchArtist",
+  "ebaySearchTitle",
+  "ebaySearchCondition",
+  "releaseLookupInput",
+  "releaseLookupCondition",
+  "vymArtist",
+  "vymTitle",
+  "vymMatrixA",
+  "vymMatrixB",
+  "vymCondition",
+  "vymPricesInput",
+  "calcBuyPrice",
+  "calcResalePrice",
+  "calcCondition",
+  "calcGoal",
+];
+
+function saveDealSearchToCache() {
+  const fields = {};
+  DEAL_SEARCH_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) fields[id] = el.value;
+  });
+  localStorage.setItem(
+    DEAL_SEARCH_CACHE_KEY,
+    JSON.stringify({ savedAt: new Date().toISOString(), fields }),
+  );
+}
+
+function restoreDealSearchFromCache() {
+  const cached = localStorage.getItem(DEAL_SEARCH_CACHE_KEY);
+  if (!cached) return;
+  try {
+    const parsed = JSON.parse(cached);
+    if (!parsed?.fields) return;
+    Object.entries(parsed.fields).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el && typeof value === "string") el.value = value;
+    });
+  } catch (e) {
+    console.error("Failed to restore deal search cache", e);
+  }
+}
+
+function setupDealSearchAutosave() {
+  // debounce() is provided by script.js, which is always loaded before deals.js on deals.html
+  const debouncedSave = debounce(saveDealSearchToCache, 400);
+  DEAL_SEARCH_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", debouncedSave);
+    el.addEventListener("change", debouncedSave);
+  });
+  window.addEventListener("beforeunload", saveDealSearchToCache);
+  restoreDealSearchFromCache();
+}
+
 // Initialize drag and drop for bulk deals
 document.addEventListener("DOMContentLoaded", () => {
   initBulkDropZone();
@@ -497,6 +557,7 @@ function resetCalculator() {
   document.getElementById("calcCondition").value = "VG";
   document.getElementById("calcGoal").value = "balanced";
   document.getElementById("dealResult").classList.add("hidden");
+  saveDealSearchToCache();
 }
 
 async function analyzeBulkDeals() {
@@ -2594,4 +2655,5 @@ async function _dfRunArbitrage(release) {
 // Initialise assistant when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   initDealFinderAssistant();
+  setupDealSearchAutosave();
 });

@@ -391,6 +391,8 @@ async function uploadPhotosToImgBB(files) {
         "Hosted URLs:",
         hostedPhotoUrls.map((u) => ({ url: u.url, deleteUrl: u.deleteUrl })),
       );
+      // Persist hosted URLs so they can be recalled on next visit
+      saveListingProgressToCache();
     }
     if (failedCount > 0) {
       showToast(
@@ -1406,6 +1408,8 @@ function removePhoto(idx) {
   uploadedPhotos.splice(idx, 1);
   renderPhotoGrid();
   updateEmptyState();
+  // Persist updated photo list
+  saveListingProgressToCache();
 }
 function updateEmptyState() {
   if (uploadedPhotos.length > 0) {
@@ -2405,6 +2409,11 @@ function collectListingProgress() {
     version: 1,
     savedAt: new Date().toISOString(),
     fields,
+    hostedPhotos: hostedPhotoUrls.map((p) => ({
+      url: p.url,
+      displayUrl: p.displayUrl || p.url,
+      deleteUrl: p.deleteUrl || null,
+    })),
     outputs: {
       titleOptionsHtml:
         document.getElementById("titleOptions")?.innerHTML || "",
@@ -2453,6 +2462,17 @@ function restoreListingProgressFromCache() {
       document.getElementById("feeFloor").innerHTML = outputs.feeFloorHtml;
     if (outputs.shotListHtml)
       document.getElementById("shotList").innerHTML = outputs.shotListHtml;
+
+    // Restore hosted photo URLs so the photo grid is populated
+    if (Array.isArray(parsed.hostedPhotos) && parsed.hostedPhotos.length > 0) {
+      hostedPhotoUrls = parsed.hostedPhotos.map((p) => ({
+        url: p.url,
+        displayUrl: p.displayUrl || p.url,
+        deleteUrl: p.deleteUrl || null,
+      }));
+      renderPhotoGrid();
+      updateProgressSteps(2);
+    }
 
     const hasGeneratedOutput = Boolean(
       outputs.titleOptionsHtml || outputs.htmlOutput || outputs.tagsOutputHtml,
