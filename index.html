@@ -384,6 +384,17 @@
                   Crop Image, then Analyse
                 </button>
               </div>
+              <!-- Auto-detected matrix/runout from photo upload -->
+              <div id="autoMatrixResult" class="hidden mt-3">
+                <div class="p-3 bg-surface-light border border-gray-700 rounded-lg">
+                  <div class="flex items-center gap-2 mb-1">
+                    <i data-feather="disc" class="w-4 h-4 text-primary"></i>
+                    <span class="text-sm font-medium text-gray-300">Auto-detected Matrix</span>
+                    <span id="autoMatrixBadge" class="confidence-badge"></span>
+                  </div>
+                  <div id="autoMatrixLines" class="text-xs font-mono text-gray-400 mt-1"></div>
+                </div>
+              </div>
               <!-- Upload Progress -->
               <div id="uploadProgress" class="hidden mt-4">
                 <div class="flex items-center justify-between mb-2">
@@ -904,6 +915,7 @@
     <script src="components/ocr-service.js"></script>
     <script src="components/enhanced-ocr-service.js"></script>
     <script src="components/discogs-service.js"></script>
+    <script src="components/pricing-intelligence-service.js"></script>
     <script src="components/xai-service.js"></script>
     <script src="components/ai-chat.js"></script>
     <!-- Futuristic Features -->

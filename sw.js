@@ -44,6 +44,7 @@ const PRECACHE_URLS = [
   '/components/tesseract-ocr-service.js',
   '/components/pricecharting-service.js',
   '/components/stat-card.js',
+  '/components/pricing-intelligence-service.js',
   '/components/telegram-service.js',
   '/components/bitcoin-service.js',
   '/components/solana-service.js',
