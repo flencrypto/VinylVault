@@ -64,14 +64,20 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          // Only cache successful, same-origin (basic) responses
+          if (response.ok && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(request, clone));
+          }
           return response;
         })
         .catch(() =>
-          caches
-            .match("/offline")
-            .then((cached) => cached || caches.match("/"))
+          // Try the cached version of this exact page first, then /offline, then /
+          caches.match(request).then((cached) =>
+            cached || caches.match("/offline").then((offline) =>
+              offline || caches.match("/")
+            )
+          )
         )
     );
     return;

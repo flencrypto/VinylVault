@@ -325,8 +325,12 @@ async function addPhotos(files) {
           const badgeEl = document.getElementById("autoMatrixBadge");
           if (container && linesEl) {
             container.classList.remove("hidden");
-            linesEl.innerHTML = matrixResult.matrix
-              .map(l => `<div>${l}</div>`).join("");
+            linesEl.textContent = "";
+            matrixResult.matrix.forEach(l => {
+              const div = document.createElement("div");
+              div.textContent = l;
+              linesEl.appendChild(div);
+            });
             if (badgeEl) {
               const cls = matrixResult.confidence > 70 ? "high"
                 : matrixResult.confidence > 40 ? "medium" : "low";

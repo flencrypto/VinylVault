@@ -202,7 +202,7 @@ Rules:
         role: "user",
         content: [
           { type: "text", text: "Extract the dead-wax matrix/runout numbers from this photo." },
-          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}`, detail: "high" } }
+          { type: "image_url", image_url: { url: `data:${imageInput.type || "image/jpeg"};base64,${base64}`, detail: "high" } }
         ]
       }
     ];

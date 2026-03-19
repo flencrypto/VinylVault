@@ -4,8 +4,11 @@
  * Phase 2 feature — provenance-aware pricing.
  *
  * Primary sources (in order of preference):
- *   1. eBay sold/completed listings (via ebay-service.js)
+ *   1. eBay active listings (via ebay-service.js Browse API)
  *   2. Discogs current marketplace stats (lowest price, for-sale count)
+ *
+ * Note: eBay Browse API returns active listings only, not completed sales.
+ * Sold-data integration requires Marketplace Insights API (future Phase 1 broker).
  *
  * Future: PriceCharting, Popsike-style historical aggregation (server-side broker).
  *
@@ -107,12 +110,14 @@ class PricingIntelligenceService extends HTMLElement {
     const intel = await this.getPriceIntelligence(releaseId, { forceRefresh: true });
     const variantMatch = await this.matchPressingVariant(releaseId, matrixResult.matrix);
 
+    // Clone stats to avoid mutating the cached intelligence object
+    const stats = { ...intel.stats };
     if (variantMatch.score >= 0.85) {
-      intel.stats.confidence = "high";
-      intel.stats.variantMatch = variantMatch;
+      stats.confidence = "high";
+      stats.variantMatch = variantMatch;
     }
 
-    return { ...intel, ocrMatrix: matrixResult, pressingMatch: variantMatch };
+    return { ...intel, stats, ocrMatrix: matrixResult, pressingMatch: variantMatch };
   }
 
   /**
@@ -143,14 +148,14 @@ class PricingIntelligenceService extends HTMLElement {
       ctx += "This pressing has a known misprint/mispress variant.\n";
     }
 
-    ctx += `\nPricing context:\n- Median sold (recent): $${stats?.medianSoldLast90d || "N/A"}\n`;
+    ctx += `\nPricing context:\n- Median active listing: $${stats?.medianListingPrice || "N/A"}\n`;
     ctx += `- Current lowest listing: $${stats?.currentLowestListing || "N/A"}\n`;
     ctx += `- Confidence: ${stats?.confidence || "low"}\n`;
 
     if (comparables && comparables.length) {
-      ctx += "Recent comps:\n";
+      ctx += "Current eBay listings:\n";
       comparables.slice(0, 3).forEach(c => {
-        ctx += `- $${c.price} (${c.condition}, sold ${c.soldDate || "unknown"})\n`;
+        ctx += `- $${c.price} (${c.condition})\n`;
       });
     }
 
@@ -175,17 +180,17 @@ class PricingIntelligenceService extends HTMLElement {
       console.warn("[PricingIntel] Discogs metadata fetch failed", err.message);
     }
 
-    // Step 2: eBay sold listings — now with smart keywords if metadata available
+    // Step 2: eBay active listings — for current market pricing context
     try {
-      ebayData = await this._fetchEbaySoldData(releaseId, {
+      ebayData = await this._fetchEbayActiveListings(releaseId, {
         ...options,
         releaseMetadata
       });
-      if (ebayData && ebayData.soldItems && ebayData.soldItems.length > 0) {
+      if (ebayData && ebayData.listings && ebayData.listings.length > 0) {
         sources.push("ebay");
       }
     } catch (err) {
-      console.warn("[PricingIntel] eBay sold fetch failed", err.message);
+      console.warn("[PricingIntel] eBay listings fetch failed", err.message);
     }
 
     // Step 3: Discogs current marketplace stats
@@ -288,7 +293,7 @@ class PricingIntelligenceService extends HTMLElement {
     };
   }
 
-  async _fetchEbaySoldData(releaseId, { releaseMetadata, condition = "VG+" } = {}) {
+  async _fetchEbayActiveListings(releaseId, { releaseMetadata, condition = "VG+" } = {}) {
     const ebayService = window.ebayService;
     if (!ebayService || !ebayService.hasSearchCredentials) return null;
 
@@ -308,7 +313,7 @@ class PricingIntelligenceService extends HTMLElement {
 
     const results = await ebayService.searchListings(keywords, {
       limit: 20,
-      sort: "newlyListed",
+      sort: "price",
       filter: conditionFilter === "Used" ? "conditionIds:{3000}" : "",
     });
 
@@ -323,33 +328,31 @@ class PricingIntelligenceService extends HTMLElement {
 
     if (relevantItems.length === 0) return null;
 
-    const prices = relevantItems
+    const listings = relevantItems
       .filter(item => item.price?.value)
       .map(item => ({
         price: parseFloat(item.price.value),
         currency: item.price.currency || "USD",
-        soldDate: item.itemEndDate || null,
-        condition: item.condition || "Unknown",
+        condition: item.condition?.conditionDisplayName || item.conditionId || "Unknown",
         title: item.title,
         url: item.itemWebUrl
       }))
       .sort((a, b) => a.price - b.price);
 
-    if (prices.length === 0) return null;
+    if (listings.length === 0) return null;
 
-    const pricesNumeric = prices.map(p => p.price);
-    const avg = pricesNumeric.reduce((sum, p) => sum + p, 0) / prices.length;
+    const pricesNumeric = listings.map(p => p.price);
+    const avg = pricesNumeric.reduce((sum, p) => sum + p, 0) / listings.length;
     const medianIndex = Math.floor(pricesNumeric.length / 2);
     const median = pricesNumeric[medianIndex];
 
     return {
-      soldItems: prices.slice(0, 6),
-      count: prices.length,
-      lowestSold: Math.min(...pricesNumeric),
-      highestSold: Math.max(...pricesNumeric),
-      averageSold: Number(avg.toFixed(2)),
-      medianSold: Number(median.toFixed(2)),
-      lastSold: prices[0].soldDate,
+      listings: listings.slice(0, 6),
+      count: listings.length,
+      lowestListing: Math.min(...pricesNumeric),
+      highestListing: Math.max(...pricesNumeric),
+      averageListing: Number(avg.toFixed(2)),
+      medianListing: Number(median.toFixed(2)),
       searchKeywordsUsed: keywords
     };
   }
@@ -377,23 +380,23 @@ class PricingIntelligenceService extends HTMLElement {
     const now = new Date().toISOString();
 
     const stats = {
-      medianSoldLast90d: null,
-      averageSoldLast90d: null,
-      lowestSoldRecent: null,
-      highestSoldRecent: null,
-      numSalesRecent: 0,
+      medianListingPrice: null,
+      averageListingPrice: null,
+      lowestListingPrice: null,
+      highestListingPrice: null,
+      numActiveListings: 0,
       currentLowestListing: null,
-      numListingsActive: 0,
+      numListingsDiscogs: 0,
       priceTrend: "unknown",
       confidence: "low"
     };
 
     if (ebayData) {
-      stats.medianSoldLast90d = ebayData.medianSold;
-      stats.averageSoldLast90d = ebayData.averageSold;
-      stats.lowestSoldRecent = ebayData.lowestSold;
-      stats.highestSoldRecent = ebayData.highestSold;
-      stats.numSalesRecent = ebayData.count;
+      stats.medianListingPrice = ebayData.medianListing;
+      stats.averageListingPrice = ebayData.averageListing;
+      stats.lowestListingPrice = ebayData.lowestListing;
+      stats.highestListingPrice = ebayData.highestListing;
+      stats.numActiveListings = ebayData.count;
       stats.confidence = ebayData.count >= 10 ? "high"
         : ebayData.count >= 4 ? "medium"
         : "low";
@@ -401,23 +404,12 @@ class PricingIntelligenceService extends HTMLElement {
 
     if (discogsMarketData) {
       stats.currentLowestListing = discogsMarketData.lowestPrice;
-      stats.numListingsActive = discogsMarketData.numForSale;
+      stats.numListingsDiscogs = discogsMarketData.numForSale;
 
-      if (stats.medianSoldLast90d === null && discogsMarketData.lowestPrice) {
-        stats.medianSoldLast90d = discogsMarketData.lowestPrice;
+      if (stats.medianListingPrice === null && discogsMarketData.lowestPrice) {
+        stats.medianListingPrice = discogsMarketData.lowestPrice;
         stats.confidence = "low";
       }
-    }
-
-    // Naive trend based on sold items order
-    if (ebayData && ebayData.count >= 5) {
-      const recent = ebayData.soldItems.slice(0, 3).map(i => i.price);
-      const older = ebayData.soldItems.slice(-3).map(i => i.price);
-      const recentAvg = recent.reduce((s, p) => s + p, 0) / recent.length;
-      const olderAvg = older.reduce((s, p) => s + p, 0) / older.length;
-      stats.priceTrend = recentAvg > olderAvg * 1.10 ? "rising"
-        : recentAvg < olderAvg * 0.90 ? "falling"
-        : "stable";
     }
 
     return {
@@ -443,9 +435,9 @@ class PricingIntelligenceService extends HTMLElement {
         }
       } : null,
       stats,
-      comparables: ebayData?.soldItems || [],
+      comparables: ebayData?.listings || [],
       searchKeywordsUsed: ebayData?.searchKeywordsUsed || null,
-      disclaimer: "Prices reflect recent sold values and current listings. Not financial advice.",
+      disclaimer: "Prices reflect current active listings, not completed sales. Not financial advice.",
       meta: { fetchDurationMs }
     };
   }
@@ -473,24 +465,43 @@ class PricingIntelligenceService extends HTMLElement {
   /**
    * Compare two sets of matrix arrays for pressing match.
    * Returns match score 0–1 + explanation.
+   * Uses bipartite matching: each user line matches at most one variant line.
    */
   _compareMatrix(userMatrixNorm, variantMatrixNorm) {
     if (!userMatrixNorm.length || !variantMatrixNorm.length) {
       return { score: 0, matchType: "no-data", explanation: "Missing matrix data" };
     }
 
+    const EXACT = 2;
+    const PARTIAL = 1;
+    const EXACT_WEIGHT = 1.0;
+    const PARTIAL_WEIGHT = 0.4;
+
     let matches = 0;
     let partial = 0;
+    const usedVariantIndices = new Set();
 
+    // Match each user line to at most one best variant line
     for (const u of userMatrixNorm) {
-      for (const v of variantMatrixNorm) {
-        if (u === v) matches++;
-        else if (u.includes(v) || v.includes(u)) partial++;
+      let bestScore = 0;
+      let bestIdx = -1;
+
+      for (let i = 0; i < variantMatrixNorm.length; i++) {
+        if (usedVariantIndices.has(i)) continue;
+        const v = variantMatrixNorm[i];
+        if (u === v && bestScore < EXACT) { bestScore = EXACT; bestIdx = i; }
+        else if ((u.includes(v) || v.includes(u)) && bestScore < PARTIAL) { bestScore = PARTIAL; bestIdx = i; }
+      }
+
+      if (bestIdx >= 0) {
+        usedVariantIndices.add(bestIdx);
+        if (bestScore === EXACT) matches++;
+        else if (bestScore === PARTIAL) partial++;
       }
     }
 
     const total = Math.max(userMatrixNorm.length, variantMatrixNorm.length);
-    const score = (matches * 1.0 + partial * 0.4) / total;
+    const score = Math.min((matches * EXACT_WEIGHT + partial * PARTIAL_WEIGHT) / total, 1.0);
 
     let matchType = "none";
     let explanation = "No clear match";
