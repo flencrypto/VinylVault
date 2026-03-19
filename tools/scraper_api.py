@@ -218,4 +218,6 @@ if __name__ == '__main__':
     print("  POST /api/config - Update configuration")
     print("\nServer running on http://localhost:5000")
     
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    _debug = os.environ.get('FLASK_DEBUG', '').lower() in ('1', 'true', 'yes', 'on')
+    _host = '127.0.0.1' if _debug else '0.0.0.0'
+    app.run(host=_host, port=5000, debug=_debug)

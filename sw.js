@@ -21,7 +21,7 @@ const PRECACHE_URLS = [
   '/script.js',
   '/collection.js',
   '/deals.js',
-  '/manifest.json',
+  '/manifest.webmanifest',
   '/static/favicon.ico',
   '/static/icon-192.png',
   '/static/icon-512.png',
