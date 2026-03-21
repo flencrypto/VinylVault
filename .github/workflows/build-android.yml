@@ -20,6 +20,9 @@ env:
   # Public TWA SHA-256 fingerprint (matches /.well-known/assetlinks.json).
   # This is a public certificate hash — safe to embed here per Android TWA spec.
   TWA_FINGERPRINT_PUBLIC: "EC:B8:A6:5C:CF:7D:DC:6A:8A:69:4C:B3:3D:FF:23:42:C8:7D:FB:D1:22:C9:A4:16:C0:A7:18:00:F9:EE:B0:2D"
+  # android-actions/setup-android@v3 specifies node20; this opts it into Node.js 24
+  # ahead of the forced migration on June 2nd 2026.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-android:
@@ -30,13 +33,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
