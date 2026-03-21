@@ -1,5 +1,6 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import "./globals.css"
+import ServiceWorkerRegister from "@/components/pwa/service-worker-register"
 
 export const metadata: Metadata = {
   title: "VinylVault — Collector Archive",
@@ -20,6 +21,10 @@ export const metadata: Metadata = {
   other: {
     "mobile-web-app-capable": "yes",
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: "#c8973f",
 }
 
 export default function RootLayout({

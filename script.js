@@ -313,6 +313,42 @@ async function addPhotos(files) {
   ) {
     showToast("Add AI API key in Settings for auto-detection", "warning");
   }
+
+  // Auto-trigger matrix extraction on newly added photos
+  if (localStorage.getItem("openai_api_key") && window.enhancedOcrService) {
+    for (const file of files) {
+      try {
+        const matrixResult = await window.enhancedOcrService.extractMatrixFromImage(file);
+        if (matrixResult.matrix.length > 0) {
+          const container = document.getElementById("autoMatrixResult");
+          const linesEl = document.getElementById("autoMatrixLines");
+          const badgeEl = document.getElementById("autoMatrixBadge");
+          if (container && linesEl) {
+            container.classList.remove("hidden");
+            linesEl.textContent = "";
+            matrixResult.matrix.forEach(l => {
+              const div = document.createElement("div");
+              div.textContent = l;
+              linesEl.appendChild(div);
+            });
+            if (badgeEl) {
+              const cls = matrixResult.confidence > 70 ? "high"
+                : matrixResult.confidence > 40 ? "medium" : "low";
+              badgeEl.className = `confidence-badge ${cls}`;
+              badgeEl.textContent = `${matrixResult.confidence}% OCR`;
+            }
+          }
+          // Store in current listing draft
+          if (!window.currentListingDraft) window.currentListingDraft = {};
+          window.currentListingDraft.matrix = matrixResult.matrix;
+          window.currentListingDraft.matrixConfidence = matrixResult.confidence;
+          break; // Process only the first photo with detected matrix
+        }
+      } catch (err) {
+        console.debug("[AutoMatrix] Extraction skipped:", err.message);
+      }
+    }
+  }
 }
 async function uploadPhotosToImgBB(files) {
   const apiKey = localStorage.getItem("imgbb_api_key");
@@ -391,6 +427,8 @@ async function uploadPhotosToImgBB(files) {
         "Hosted URLs:",
         hostedPhotoUrls.map((u) => ({ url: u.url, deleteUrl: u.deleteUrl })),
       );
+      // Persist hosted URLs so they can be recalled on next visit
+      saveListingProgressToCache();
     }
     if (failedCount > 0) {
       showToast(
@@ -1406,6 +1444,8 @@ function removePhoto(idx) {
   uploadedPhotos.splice(idx, 1);
   renderPhotoGrid();
   updateEmptyState();
+  // Persist updated photo list
+  saveListingProgressToCache();
 }
 function updateEmptyState() {
   if (uploadedPhotos.length > 0) {
@@ -2405,6 +2445,11 @@ function collectListingProgress() {
     version: 1,
     savedAt: new Date().toISOString(),
     fields,
+    hostedPhotos: hostedPhotoUrls.map((p) => ({
+      url: p.url,
+      displayUrl: p.displayUrl || p.url,
+      deleteUrl: p.deleteUrl || null,
+    })),
     outputs: {
       titleOptionsHtml:
         document.getElementById("titleOptions")?.innerHTML || "",
@@ -2453,6 +2498,17 @@ function restoreListingProgressFromCache() {
       document.getElementById("feeFloor").innerHTML = outputs.feeFloorHtml;
     if (outputs.shotListHtml)
       document.getElementById("shotList").innerHTML = outputs.shotListHtml;
+
+    // Restore hosted photo URLs so the photo grid is populated
+    if (Array.isArray(parsed.hostedPhotos) && parsed.hostedPhotos.length > 0) {
+      hostedPhotoUrls = parsed.hostedPhotos.map((p) => ({
+        url: p.url,
+        displayUrl: p.displayUrl || p.url,
+        deleteUrl: p.deleteUrl || null,
+      }));
+      renderPhotoGrid();
+      updateProgressSteps(2);
+    }
 
     const hasGeneratedOutput = Boolean(
       outputs.titleOptionsHtml || outputs.htmlOutput || outputs.tagsOutputHtml,
