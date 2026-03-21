@@ -1,4 +1,4 @@
-# VinylFort Completion Plan
+# VinylVault Completion Plan
 
 ## Assumptions
 

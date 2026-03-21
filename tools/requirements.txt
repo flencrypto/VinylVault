@@ -1,0 +1,37 @@
+# Web Scraper Agent Dependencies
+
+# Core scraping libraries
+playwright==1.40.0
+selenium==4.15.2
+requests==2.31.0
+
+# API server dependencies
+flask==2.3.3
+flask-cors==4.0.0
+
+# Image processing (for CAPTCHA handling)
+Pillow==10.1.0
+
+# Async utilities
+asyncio
+
+# System monitoring
+psutil==5.9.6
+
+# Data handling
+pandas==2.1.4
+beautifulsoup4==4.12.2
+
+# Proxy management
+aiohttp==3.9.1
+
+# CAPTCHA solving services (optional)
+# anticaptchaofficial==1.0.74
+# twocaptcha==1.0.3
+
+# Development tools
+pytest==7.4.3
+pytest-asyncio==0.21.1
+
+# Note: Playwright requires browser installation
+# Run: playwright install chromium firefox webkit

@@ -1,6 +1,6 @@
-# eBay Deal Finder API Integration — VinylFort
+# eBay Deal Finder API Integration — VinylVault
 
-This document describes how VinylFort's Deal Finder connects to the eBay REST APIs
+This document describes how VinylVault's Deal Finder connects to the eBay REST APIs
 to search for live listings and (optionally) place Buy-It-Now orders automatically.
 
 ---
@@ -36,9 +36,9 @@ configured ROI/profit thresholds.
 
 The Python SDK samples at <https://github.com/timotheus/ebaysdk-python/tree/master/samples>
 show patterns used by the older XML-based Finding/Trading APIs.
-VinylFort uses the modern REST equivalents:
+VinylVault uses the modern REST equivalents:
 
-| Python SDK API | VinylFort REST equivalent |
+| Python SDK API | VinylVault REST equivalent |
 |---|---|
 | `finding.py` → `findItemsByKeywords` | Browse API → `item_summary/search` |
 | `trading.py` → `PlaceOffer` / BIN | Buy Order API → `purchase_order` |

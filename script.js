@@ -303,15 +303,51 @@ async function addPhotos(files) {
   if (
     uploadedPhotos.length > 0 &&
     (localStorage.getItem("openai_api_key") ||
-      localStorage.getItem("deepseek_api_key"))
+      localStorage.getItem("xai_api_key"))
   ) {
     setTimeout(() => analyzePhotosWithOCR(), 500);
   } else if (
     uploadedPhotos.length > 0 &&
     !localStorage.getItem("openai_api_key") &&
-    !localStorage.getItem("deepseek_api_key")
+    !localStorage.getItem("xai_api_key")
   ) {
     showToast("Add AI API key in Settings for auto-detection", "warning");
+  }
+
+  // Auto-trigger matrix extraction on newly added photos
+  if (localStorage.getItem("openai_api_key") && window.enhancedOcrService) {
+    for (const file of files) {
+      try {
+        const matrixResult = await window.enhancedOcrService.extractMatrixFromImage(file);
+        if (matrixResult.matrix.length > 0) {
+          const container = document.getElementById("autoMatrixResult");
+          const linesEl = document.getElementById("autoMatrixLines");
+          const badgeEl = document.getElementById("autoMatrixBadge");
+          if (container && linesEl) {
+            container.classList.remove("hidden");
+            linesEl.textContent = "";
+            matrixResult.matrix.forEach(l => {
+              const div = document.createElement("div");
+              div.textContent = l;
+              linesEl.appendChild(div);
+            });
+            if (badgeEl) {
+              const cls = matrixResult.confidence > 70 ? "high"
+                : matrixResult.confidence > 40 ? "medium" : "low";
+              badgeEl.className = `confidence-badge ${cls}`;
+              badgeEl.textContent = `${matrixResult.confidence}% OCR`;
+            }
+          }
+          // Store in current listing draft
+          if (!window.currentListingDraft) window.currentListingDraft = {};
+          window.currentListingDraft.matrix = matrixResult.matrix;
+          window.currentListingDraft.matrixConfidence = matrixResult.confidence;
+          break; // Process only the first photo with detected matrix
+        }
+      } catch (err) {
+        console.debug("[AutoMatrix] Extraction skipped:", err.message);
+      }
+    }
   }
 }
 async function uploadPhotosToImgBB(files) {
@@ -391,6 +427,8 @@ async function uploadPhotosToImgBB(files) {
         "Hosted URLs:",
         hostedPhotoUrls.map((u) => ({ url: u.url, deleteUrl: u.deleteUrl })),
       );
+      // Persist hosted URLs so they can be recalled on next visit
+      saveListingProgressToCache();
     }
     if (failedCount > 0) {
       showToast(
@@ -483,9 +521,14 @@ async function identifyPhotoType(imageFile, service) {
   const name = imageFile.name.toLowerCase();
 
   // If we can use AI vision, do so
-  if (service && service.apiKey) {
+  const canUseVision =
+    service &&
+    service.apiKey &&
+    (!service.isVisionModel || service.isVisionModel(service.model));
+  if (canUseVision) {
     try {
       const base64 = await fileToBase64Clean(imageFile);
+      const mimeType = imageFile.type || "image/jpeg";
       const messages = [
         {
           role: "system",
@@ -514,7 +557,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
             {
               type: "image_url",
               image_url: {
-                url: `data:image/jpeg;base64,${base64}`,
+                url: `data:${mimeType};base64,${base64}`,
                 detail: "low",
               },
             },
@@ -523,7 +566,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
       ];
 
       const response = await fetch(
-        service.baseUrl || "https://api.openai.com/v1/chat/completions",
+        service.baseUrl ? `${service.baseUrl}/chat/completions` : "https://api.openai.com/v1/chat/completions",
         {
           method: "POST",
           headers: {
@@ -542,7 +585,7 @@ Return ONLY a JSON object: {"type": "one_of_the_above", "confidence": "high|medi
       if (response.ok) {
         const data = await response.json();
         const content = data.choices[0].message.content;
-        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|([\s\S]*)/);
+        const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```|(\{[\s\S]*\})/);
         const jsonStr = jsonMatch ? jsonMatch[1] || jsonMatch[2] : content;
         return JSON.parse(jsonStr.trim());
       }
@@ -578,31 +621,31 @@ function fileToBase64Clean(file) {
 }
 function getAIService() {
   const provider = localStorage.getItem("ai_provider") || "openai";
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
-    return window.deepseekService;
+  if (provider === "xai" && window.xaiService?.isConfigured) {
+    return window.xaiService;
   }
   return window.ocrService;
 }
 
 function resolveOCRProvider() {
   const preferredProvider = localStorage.getItem("ai_provider") || "openai";
-  const deepseekModel =
-    localStorage.getItem("deepseek_model") || "deepseek-chat";
-  const canUseDeepseekVision =
-    preferredProvider === "deepseek" &&
-    window.deepseekService?.isConfigured &&
-    window.deepseekService.isVisionModel(deepseekModel);
+  const xaiModel =
+    localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
+  const canUseXAIVision =
+    preferredProvider === "xai" &&
+    window.xaiService?.isConfigured &&
+    window.xaiService.isVisionModel(xaiModel);
 
-  if (canUseDeepseekVision) {
-    return { provider: "deepseek", fallbackReason: null };
+  if (canUseXAIVision) {
+    return { provider: "xai", fallbackReason: null };
   }
 
-  if (preferredProvider === "deepseek") {
+  if (preferredProvider === "xai") {
     return {
       provider: "openai",
-      fallbackReason: window.deepseekService?.isConfigured
-        ? `DeepSeek model \"${deepseekModel}\" does not support image analysis.`
-        : "DeepSeek API key not configured.",
+      fallbackReason: window.xaiService?.isConfigured
+        ? `xAI model "${xaiModel}" does not support image analysis. Please select "grok-4-1-fast-reasoning" in Settings.`
+        : "xAI API key not configured.",
     };
   }
 
@@ -677,7 +720,7 @@ async function analyzePhotosWithOCR() {
     // Determine which AI service to use
     const { provider, fallbackReason } = resolveOCRProvider();
     const service =
-      provider === "deepseek" ? window.deepseekService : window.ocrService;
+      provider === "xai" ? window.xaiService : window.ocrService;
 
     if (fallbackReason) {
       showToast(`${fallbackReason} Falling back to OpenAI for OCR.`, "warning");
@@ -689,11 +732,11 @@ async function analyzePhotosWithOCR() {
       if (!apiKey) throw new Error("OpenAI API key not configured");
       window.ocrService.updateApiKey(apiKey);
     } else {
-      const apiKey = localStorage.getItem("deepseek_api_key");
-      if (!apiKey) throw new Error("DeepSeek API key not configured");
-      window.deepseekService.updateApiKey(apiKey);
-      window.deepseekService.updateModel(
-        localStorage.getItem("deepseek_model") || "deepseek-chat",
+      const apiKey = localStorage.getItem("xai_api_key");
+      if (!apiKey) throw new Error("xAI API key not configured");
+      window.xaiService.updateApiKey(apiKey);
+      window.xaiService.updateModel(
+        localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
       );
     }
 
@@ -762,7 +805,7 @@ async function analyzePhotosWithOCR() {
     ) {
       const provider = localStorage.getItem("ai_provider") || "openai";
       showToast(
-        `Please configure ${provider === "deepseek" ? "DeepSeek" : "OpenAI"} API key in Settings`,
+        `Please configure ${provider === "xai" ? "xAI" : "OpenAI"} API key in Settings`,
         "error",
       );
     } else {
@@ -777,6 +820,53 @@ async function analyzePhotosWithOCR() {
       // Reset progress for next time
       updateAnalysisProgress("Initializing...", 0);
     }, 300);
+  }
+}
+
+/**
+ * Show the OCR crop modal for the first uploaded photo, then run the normal
+ * AI OCR analysis on the (optionally cropped) result.
+ * Registered on the "Crop Image, then Analyse" button.
+ */
+async function cropFirstThenAnalyse() {
+  if (uploadedPhotos.length === 0) {
+    showToast("Upload at least one photo first", "error");
+    return;
+  }
+
+  if (!window.ocrService || typeof window.ocrService.showCropModal !== "function") {
+    showToast("Crop feature not available", "error");
+    return;
+  }
+
+  const btn = document.getElementById("cropAnalyseBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Opening crop UI…"; }
+
+  try {
+    // Show crop modal for the primary image; user may confirm, skip, or cancel
+    const croppedOrOriginal = await window.ocrService.showCropModal(uploadedPhotos[0]);
+
+    // Replace the first entry in uploadedPhotos with the (possibly) cropped blob
+    if (croppedOrOriginal !== uploadedPhotos[0]) {
+      // User confirmed a crop — wrap blob in a File-like object for consistency
+      const croppedFile = new File(
+        [croppedOrOriginal],
+        uploadedPhotos[0].name || "cropped.jpg",
+        { type: croppedOrOriginal.type || "image/jpeg" },
+      );
+      uploadedPhotos[0] = croppedFile;
+      renderPhotoGrid();
+    }
+
+    // Now run the normal AI analysis with the (cropped) photos
+    await analyzePhotosWithOCR();
+  } catch (err) {
+    if (err.message !== "Crop cancelled by user") {
+      console.error("Crop-then-analyse error:", err);
+      showToast(`Error: ${err.message}`, "error");
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i data-feather="crop" class="w-4 h-4"></i> Crop Image, then Analyse'; if (typeof feather !== "undefined") feather.replace(); }
   }
 }
 function populateFieldsFromDiscogs(discogsData) {
@@ -867,9 +957,13 @@ function populateFieldsFromOCR(data) {
     window.detectedIdentifierStrings = data.identifierStrings;
   // Store pressing identification data
   if (data.pressingType) window.detectedPressingType = data.pressingType;
-  if (data.isFirstPress) window.detectedIsFirstPress = data.isFirstPress;
+  if (data.isFirstPress !== null && data.isFirstPress !== undefined) window.detectedIsFirstPress = data.isFirstPress;
   if (data.reissueYear) window.detectedReissueYear = data.reissueYear;
   if (data.originalYear) window.detectedOriginalYear = data.originalYear;
+  if (data.pressingEvidence) window.detectedPressingEvidence = data.pressingEvidence;
+  if (data.pressingConfidence) window.detectedPressingConfidence = data.pressingConfidence;
+  if (Array.isArray(data.tracklist) && data.tracklist.length > 0)
+    window.detectedTracklist = data.tracklist;
 
   // Update UI to show detected info
   updateDetectedInfoPanel(data);
@@ -973,16 +1067,9 @@ function updateDetectedInfoPanel(data) {
     );
 
   // Add pressing identification info
-  if (data.isFirstPress !== undefined) {
-    const pressBadge = data.isFirstPress
-      ? '<span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">FIRST PRESS</span>'
-      : data.pressingType === "reissue"
-        ? '<span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">REISSUE</span>'
-        : data.pressingType === "repress"
-          ? '<span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">REPRESS</span>'
-          : "";
-    if (pressBadge) infoItems.push(pressBadge);
-  }
+  const pressBadge = pressingTypeBadge(data.pressingType) ||
+    (data.isFirstPress === true ? pressingTypeBadge("first_press") : "");
+  if (pressBadge) infoItems.push(pressBadge);
 
   if (data.originalYear && data.originalYear !== data.year) {
     infoItems.push(
@@ -1001,6 +1088,30 @@ function updateDetectedInfoPanel(data) {
       : data.confidence === "medium"
         ? "text-yellow-400"
         : "text-orange-400";
+
+  const pressingEvidenceHtml =
+    data.pressingEvidence?.length
+      ? `
+            <div class="mt-2 pt-2 border-t border-green-500/20">
+                <p class="text-xs text-gray-400 mb-1">Pressing evidence:</p>
+                <ul class="text-xs text-gray-500 list-disc list-inside">
+                    ${data.pressingEvidence.map((e) => `<li>${e}</li>`).join("")}
+                </ul>
+            </div>
+        `
+      : "";
+
+  const tracklistHtml =
+    Array.isArray(data.tracklist) && data.tracklist.length > 0
+      ? `
+            <div class="mt-2 pt-2 border-t border-green-500/20">
+                <p class="text-xs text-gray-400 mb-1">Tracklist detected:</p>
+                <ol class="text-xs text-gray-500 list-decimal list-inside">
+                    ${data.tracklist.map((t) => `<li>${t}</li>`).join("")}
+                </ol>
+            </div>
+        `
+      : "";
 
   panel.innerHTML = `
         <div class="flex items-center gap-2 mb-2">
@@ -1028,6 +1139,7 @@ function updateDetectedInfoPanel(data) {
         `
             : ""
         }
+        ${pressingEvidenceHtml}
         ${
           data.identifierStrings?.length
             ? `
@@ -1040,6 +1152,7 @@ function updateDetectedInfoPanel(data) {
         `
             : ""
         }
+        ${tracklistHtml}
     `;
   if (typeof feather !== "undefined") feather.replace();
 }
@@ -1113,6 +1226,52 @@ function getUploadedPhotoHints() {
       .map((token) => token.trim())
       .filter((token) => token.length >= 3);
   });
+}
+
+/**
+ * Build a context string from OCR-detected pressing metadata to enrich
+ * AI listing and analysis prompts.
+ * @returns {string}
+ */
+function getDetectedPressingContext() {
+  const parts = [];
+  const matrixA = document.getElementById("matrixSideAInput")?.value?.trim();
+  const matrixB = document.getElementById("matrixSideBInput")?.value?.trim();
+  if (matrixA) parts.push(`Matrix A: ${matrixA}`);
+  if (matrixB) parts.push(`Matrix B: ${matrixB}`);
+  if (window.detectedLabel) parts.push(`Label: ${window.detectedLabel}`);
+  if (window.detectedCountry) parts.push(`Country: ${window.detectedCountry}`);
+  if (window.detectedLabelCode) parts.push(`Label Code: ${window.detectedLabelCode}`);
+  if (window.detectedPressingPlant) parts.push(`Pressing Plant: ${window.detectedPressingPlant}`);
+  if (window.detectedPressingType) parts.push(`Pressing Type: ${formatPressingType(window.detectedPressingType)}`);
+  if (window.detectedPressingEvidence?.length)
+    parts.push(`Pressing Evidence: ${window.detectedPressingEvidence.join("; ")}`);
+  return parts.join(" | ");
+}
+
+/**
+ * Convert a snake_case pressing type string to a human-readable label.
+ * @param {string} type  e.g. "first_press", "early_press"
+ * @returns {string}
+ */
+function formatPressingType(type) {
+  if (!type) return "";
+  return type.replace(/_/g, " ");
+}
+
+/**
+ * Return an HTML badge span for the given pressing type, or "" if unknown.
+ * @param {string|null|undefined} type
+ * @returns {string}
+ */
+function pressingTypeBadge(type) {
+  const badges = {
+    first_press: '<span class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded text-xs font-medium">FIRST PRESS</span>',
+    early_press: '<span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-300 rounded text-xs font-medium">EARLY PRESS</span>',
+    repress: '<span class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded text-xs font-medium">REPRESS</span>',
+    reissue: '<span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-xs font-medium">REISSUE</span>',
+  };
+  return badges[type] || "";
 }
 
 function mergeReleaseIntoDetection(currentDetection, release) {
@@ -1211,6 +1370,9 @@ async function applyDiscogsCorrectionFromUrl(url, currentDetection = {}) {
 function renderPhotoGrid() {
   if (uploadedPhotos.length === 0 && hostedPhotoUrls.length === 0) {
     photoGrid.classList.add("hidden");
+    // Hide crop button too
+    const cropRow = document.getElementById("cropAnalyseRow");
+    if (cropRow) cropRow.classList.add("hidden");
     // Revoke all object URLs when clearing grid
     photoObjectUrls.forEach((url) => URL.revokeObjectURL(url));
     photoObjectUrls = [];
@@ -1222,6 +1384,17 @@ function renderPhotoGrid() {
   photoObjectUrls = [];
 
   photoGrid.classList.remove("hidden");
+
+  // Show/hide the crop-before-analyse button based on whether there are local photos
+  const cropRow = document.getElementById("cropAnalyseRow");
+  if (cropRow) {
+    if (uploadedPhotos.length > 0) {
+      cropRow.classList.remove("hidden");
+      if (typeof feather !== "undefined") feather.replace();
+    } else {
+      cropRow.classList.add("hidden");
+    }
+  }
 
   // Render locally uploaded photos (File objects)
   const uploadedHtml = uploadedPhotos
@@ -1271,6 +1444,8 @@ function removePhoto(idx) {
   uploadedPhotos.splice(idx, 1);
   renderPhotoGrid();
   updateEmptyState();
+  // Persist updated photo list
+  saveListingProgressToCache();
 }
 function updateEmptyState() {
   if (uploadedPhotos.length > 0) {
@@ -1994,18 +2169,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -2015,13 +2190,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -2115,12 +2290,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -2270,6 +2445,11 @@ function collectListingProgress() {
     version: 1,
     savedAt: new Date().toISOString(),
     fields,
+    hostedPhotos: hostedPhotoUrls.map((p) => ({
+      url: p.url,
+      displayUrl: p.displayUrl || p.url,
+      deleteUrl: p.deleteUrl || null,
+    })),
     outputs: {
       titleOptionsHtml:
         document.getElementById("titleOptions")?.innerHTML || "",
@@ -2318,6 +2498,17 @@ function restoreListingProgressFromCache() {
       document.getElementById("feeFloor").innerHTML = outputs.feeFloorHtml;
     if (outputs.shotListHtml)
       document.getElementById("shotList").innerHTML = outputs.shotListHtml;
+
+    // Restore hosted photo URLs so the photo grid is populated
+    if (Array.isArray(parsed.hostedPhotos) && parsed.hostedPhotos.length > 0) {
+      hostedPhotoUrls = parsed.hostedPhotos.map((p) => ({
+        url: p.url,
+        displayUrl: p.displayUrl || p.url,
+        deleteUrl: p.deleteUrl || null,
+      }));
+      renderPhotoGrid();
+      updateProgressSteps(2);
+    }
 
     const hasGeneratedOutput = Boolean(
       outputs.titleOptionsHtml || outputs.htmlOutput || outputs.tagsOutputHtml,
@@ -3435,18 +3626,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -3456,13 +3647,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -3556,12 +3747,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -4365,18 +4556,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -4386,13 +4577,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -4486,12 +4677,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -5404,18 +5595,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -5425,13 +5616,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -5525,12 +5716,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -6410,18 +6601,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -6431,13 +6622,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -6531,12 +6722,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -6778,7 +6969,7 @@ function populateFieldsFromCollection(record) {
     // Auto-trigger AI analysis on collection photos if an API key is available
     const hasApiKey =
       localStorage.getItem("openai_api_key") ||
-      localStorage.getItem("deepseek_api_key");
+      localStorage.getItem("xai_api_key");
     if (hasApiKey) {
       setTimeout(() => analyzeCollectionPhotosWithOCR(record.photos), 500); // Delay allows the page to settle before OCR starts
     } else {
@@ -6870,7 +7061,7 @@ async function analyzeCollectionPhotosWithOCR(photos) {
 
     const { provider, fallbackReason } = resolveOCRProvider();
     const service =
-      provider === "deepseek" ? window.deepseekService : window.ocrService;
+      provider === "xai" ? window.xaiService : window.ocrService;
 
     if (fallbackReason) {
       showToast(`${fallbackReason} Falling back to OpenAI for OCR.`, "warning");
@@ -6881,11 +7072,11 @@ async function analyzeCollectionPhotosWithOCR(photos) {
       if (!apiKey) throw new Error("OpenAI API key not configured");
       window.ocrService.updateApiKey(apiKey);
     } else {
-      const apiKey = localStorage.getItem("deepseek_api_key");
-      if (!apiKey) throw new Error("DeepSeek API key not configured");
-      window.deepseekService.updateApiKey(apiKey);
-      window.deepseekService.updateModel(
-        localStorage.getItem("deepseek_model") || "deepseek-chat",
+      const apiKey = localStorage.getItem("xai_api_key");
+      if (!apiKey) throw new Error("xAI API key not configured");
+      window.xaiService.updateApiKey(apiKey);
+      window.xaiService.updateModel(
+        localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
       );
     }
 
@@ -6950,7 +7141,7 @@ async function analyzeCollectionPhotosWithOCR(photos) {
     ) {
       const provider = localStorage.getItem("ai_provider") || "openai";
       showToast(
-        `Please configure ${provider === "deepseek" ? "DeepSeek" : "OpenAI"} API key in Settings`,
+        `Please configure ${provider === "xai" ? "xAI" : "OpenAI"} API key in Settings`,
         "error",
       );
     } else {
@@ -7749,18 +7940,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -7770,13 +7961,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -7870,12 +8061,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -8796,18 +8987,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -8817,13 +9008,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -8917,12 +9108,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}. Include optimized title options, professional HTML description, condition guidance, price estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -9977,18 +10168,18 @@ async function draftAnalysis() {
 async function callAI(messages, temperature = 0.7) {
   const provider = localStorage.getItem("ai_provider") || "openai";
 
-  if (provider === "deepseek" && window.deepseekService?.isConfigured) {
+  if (provider === "xai" && window.xaiService?.isConfigured) {
     try {
       const response = await fetch(
-        "https://api.deepseek.com/v1/chat/completions",
+        "https://api.x.ai/v1/chat/completions",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("deepseek_api_key")}`,
+            Authorization: `Bearer ${localStorage.getItem("xai_api_key")}`,
           },
           body: JSON.stringify({
-            model: localStorage.getItem("deepseek_model") || "deepseek-chat",
+            model: localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning",
             messages: messages,
             temperature: temperature,
             max_tokens: 2000,
@@ -9998,13 +10189,13 @@ async function callAI(messages, temperature = 0.7) {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error?.message || "DeepSeek API request failed");
+        throw new Error(error.error?.message || "xAI API request failed");
       }
 
       const data = await response.json();
       return data.choices[0].message.content;
     } catch (error) {
-      showToast(`DeepSeek Error: ${error.message}`, "error");
+      showToast(`xAI Error: ${error.message}`, "error");
       return null;
     }
   } else {
@@ -10105,12 +10296,12 @@ async function generateListingWithAI() {
     },
     {
       role: "user",
-      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${document.getElementById("matrixSideAInput")?.value?.trim() ? ` (Matrix A: ${document.getElementById("matrixSideAInput").value.trim()})` : ""}${document.getElementById("matrixSideBInput")?.value?.trim() ? ` (Matrix B: ${document.getElementById("matrixSideBInput").value.trim()})` : ""}${notesContext ? ` | ${notesContext}` : ""}. Verify the Discogs release page details against photo evidence, explicitly cover Tracklist and Notes from that release, and reference Barcode/Other Identifier + matrix/runout matches. Include optimized title options, professional HTML description with an About This Release section, condition guidance, sold-price-led estimate in GBP, and relevant tags.`,
+      content: `Generate an eBay listing for: ${artist} - ${title}${catNo ? ` (Catalog: ${catNo})` : ""}${year ? ` (${year})` : ""}${getDetectedPressingContext() ? ` | ${getDetectedPressingContext()}` : ""}${notesContext ? ` | ${notesContext}` : ""}. Verify the Discogs release page details against photo evidence, explicitly cover Tracklist and Notes from that release, and reference Barcode/Other Identifier + matrix/runout matches. Include optimized title options, professional HTML description with an About This Release section, condition guidance, sold-price-led estimate in GBP, and relevant tags.`,
     },
   ];
   const provider = localStorage.getItem("ai_provider") || "openai";
   showToast(
-    `Generating listing with ${provider === "deepseek" ? "DeepSeek" : "OpenAI"}...`,
+    `Generating listing with ${provider === "xai" ? "xAI" : "OpenAI"}...`,
     "success",
   );
 
@@ -10354,6 +10545,21 @@ function addListingToCollection(data, ebayHtml) {
     year: data.year ? parseInt(data.year) : null,
     format: window.detectedFormat || "LP",
     genre: window.detectedGenre || "",
+    label: window.detectedLabel || "",
+    country: window.detectedCountry || "",
+    matrixRunoutA:
+      document.getElementById("matrixSideAInput")?.value?.trim() ||
+      window.detectedMatrixRunoutA ||
+      "",
+    matrixRunoutB:
+      document.getElementById("matrixSideBInput")?.value?.trim() ||
+      window.detectedMatrixRunoutB ||
+      "",
+    labelCode: window.detectedLabelCode || "",
+    pressingPlant: window.detectedPressingPlant || "",
+    pressingType: window.detectedPressingType || "",
+    pressingEvidence: window.detectedPressingEvidence || [],
+    tracklist: window.detectedTracklist || [],
     purchasePrice: parseFloat(data.cost) || 0,
     purchaseDate,
     purchaseSource: "other",
@@ -10413,3 +10619,63 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+// Fetch eBay sold prices via Google search (no Discogs quota cost)
+// Shared utility — available on both collection and deals pages via script.js
+async function fetchEbaySoldViaGoogle(artist, title, catalogueNumber) {
+  const cacheKey = `ebay_sold_${artist}_${title}_${catalogueNumber || ""}`.replace(/\s+/g, "_").toLowerCase();
+
+  // Guard localStorage read — may throw SecurityError in restricted browser or privacy configurations
+  try {
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (
+          parsed &&
+          typeof parsed === "object" &&
+          typeof parsed.ts === "number" &&
+          Array.isArray(parsed.results) &&
+          Date.now() - parsed.ts < 86400000 // 24 hours
+        ) {
+          return parsed.results.filter((r) => r && typeof r === "object");
+        }
+      } catch (_) { /* ignore invalid cache */ }
+    }
+  } catch (_) { /* localStorage unavailable — proceed without cache */ }
+
+  try {
+    // Build query with optional catalogue number; use URLSearchParams to avoid double-encoding
+    const queryParts = [`site:ebay.co.uk "${artist}" "${title}" vinyl sold`];
+    if (catalogueNumber) queryParts.push(`"${catalogueNumber}"`);
+    const params = new URLSearchParams({ q: queryParts.join(" "), num: "20" });
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.google.com/search?${params.toString()}`)}`;
+    const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) }); // 10s timeout
+    if (!response.ok) return [];
+    const html = await response.text();
+
+    // Extract price snippets from Google result text — match £ only (eBay UK)
+    const results = [];
+    const snippetRegex = /ebay\.co\.uk[^"]*?["'][^<]*?£([\d]+(?:\.[\d]{1,2})?)/gi;
+    let match;
+    while ((match = snippetRegex.exec(html)) !== null && results.length < 10) {
+      const price = parseFloat(match[1]);
+      if (!isNaN(price) && price > 0.5 && price < 5000) { // sanity-check: plausible vinyl price range
+        results.push({ price, date: null, condition: null, source: "ebay_google" });
+      }
+    }
+
+    // Deduplicate by price
+    const seen = new Set();
+    const unique = results.filter((r) => { const k = r.price.toFixed(2); if (seen.has(k)) return false; seen.add(k); return true; });
+
+    // Guard localStorage write — if caching fails due to quota or security errors, the fetched results are still returned to the caller
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), results: unique }));
+    } catch (_) { /* ignore cache write failure */ }
+    return unique;
+  } catch (e) {
+    console.log("eBay/Google fetch failed:", e);
+    return [];
+  }
+}

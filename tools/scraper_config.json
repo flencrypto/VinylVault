@@ -1,0 +1,99 @@
+{
+  "scraper_configurations": {
+    "basic": {
+      "description": "Basic scraping with minimal detection avoidance",
+      "headless": true,
+      "rotate_user_agent": false,
+      "random_delays": false,
+      "human_mouse_movements": false,
+      "use_proxy": false,
+      "max_retries": 1
+    },
+    "advanced": {
+      "description": "Advanced scraping with anti-detection measures",
+      "headless": true,
+      "rotate_user_agent": true,
+      "random_delays": true,
+      "min_delay": 2.0,
+      "max_delay": 5.0,
+      "human_mouse_movements": true,
+      "use_proxy": false,
+      "proxy_rotation": false,
+      "check_invisible_overlays": true,
+      "custom_timeout": 30,
+      "cache_responses": true,
+      "exponential_backoff": true,
+      "max_retries": 3,
+      "log_requests": true
+    },
+    "stealth": {
+      "description": "Maximum stealth with proxy rotation and CAPTCHA handling",
+      "headless": true,
+      "rotate_user_agent": true,
+      "random_delays": true,
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "human_mouse_movements": true,
+      "use_proxy": true,
+      "proxy_rotation": true,
+      "proxy_list": [
+        "http://proxy1:8080",
+        "http://proxy2:8080",
+        "http://proxy3:8080"
+      ],
+      "use_anticaptcha": true,
+      "anticaptcha_api_key": "YOUR_API_KEY_HERE",
+      "check_invisible_overlays": true,
+      "custom_timeout": 45,
+      "cache_responses": true,
+      "exponential_backoff": true,
+      "max_retries": 5,
+      "monitor_memory": true,
+      "log_requests": true
+    }
+  },
+  "target_platforms": {
+    "ebay": {
+      "url_patterns": ["https://www.ebay.com/*"],
+      "recommended_config": "advanced",
+      "selectors": {
+        "product_title": ".s-item__title",
+        "product_price": ".s-item__price",
+        "product_image": ".s-item__image-img"
+      }
+    },
+    "amazon": {
+      "url_patterns": ["https://www.amazon.com/*"],
+      "recommended_config": "stealth",
+      "selectors": {
+        "product_title": "#productTitle",
+        "product_price": ".a-price-whole",
+        "product_image": "#landingImage"
+      }
+    },
+    "discogs": {
+      "url_patterns": ["https://www.discogs.com/*"],
+      "recommended_config": "advanced",
+      "selectors": {
+        "album_title": ".body_title",
+        "artist_name": ".profile",
+        "release_year": ".content"
+      }
+    }
+  },
+  "proxy_sources": {
+    "free_proxies": [
+      "http://free-proxy1.com:8080",
+      "http://free-proxy2.com:8080"
+    ],
+    "premium_proxies": [
+      "http://premium-proxy1.com:8080",
+      "http://premium-proxy2.com:8080"
+    ]
+  },
+  "user_agents": {
+    "chrome_windows": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "firefox_mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "safari_mac": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15"
+  }
+}

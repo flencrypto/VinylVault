@@ -1,5 +1,65 @@
 // Deal Finder Logic
 
+// ─── Deal Finder Search Persistence ─────────────────────────────────────────
+const DEAL_SEARCH_CACHE_KEY = "vinyl_deal_search_v1";
+const DEAL_SEARCH_FIELD_IDS = [
+  "ebaySearchArtist",
+  "ebaySearchTitle",
+  "ebaySearchCondition",
+  "releaseLookupInput",
+  "releaseLookupCondition",
+  "vymArtist",
+  "vymTitle",
+  "vymMatrixA",
+  "vymMatrixB",
+  "vymCondition",
+  "vymPricesInput",
+  "calcBuyPrice",
+  "calcResalePrice",
+  "calcCondition",
+  "calcGoal",
+];
+
+function saveDealSearchToCache() {
+  const fields = {};
+  DEAL_SEARCH_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) fields[id] = el.value;
+  });
+  localStorage.setItem(
+    DEAL_SEARCH_CACHE_KEY,
+    JSON.stringify({ savedAt: new Date().toISOString(), fields }),
+  );
+}
+
+function restoreDealSearchFromCache() {
+  const cached = localStorage.getItem(DEAL_SEARCH_CACHE_KEY);
+  if (!cached) return;
+  try {
+    const parsed = JSON.parse(cached);
+    if (!parsed?.fields) return;
+    Object.entries(parsed.fields).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el && typeof value === "string") el.value = value;
+    });
+  } catch (e) {
+    console.error("Failed to restore deal search cache", e);
+  }
+}
+
+function setupDealSearchAutosave() {
+  // debounce() is provided by script.js, which is always loaded before deals.js on deals.html
+  const debouncedSave = debounce(saveDealSearchToCache, 400);
+  DEAL_SEARCH_FIELD_IDS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", debouncedSave);
+    el.addEventListener("change", debouncedSave);
+  });
+  window.addEventListener("beforeunload", saveDealSearchToCache);
+  restoreDealSearchFromCache();
+}
+
 // Initialize drag and drop for bulk deals
 document.addEventListener("DOMContentLoaded", () => {
   initBulkDropZone();
@@ -497,6 +557,7 @@ function resetCalculator() {
   document.getElementById("calcCondition").value = "VG";
   document.getElementById("calcGoal").value = "balanced";
   document.getElementById("dealResult").classList.add("hidden");
+  saveDealSearchToCache();
 }
 
 async function analyzeBulkDeals() {
@@ -701,7 +762,7 @@ function renderDealsResults(results) {
       .filter((deal) => deal.isHot)
       .forEach((deal) => {
         window.telegramService.sendDealAlert(deal).catch((err) => {
-          console.error("[VinylFort] Telegram alert failed:", err.message);
+          console.error("[VinylVault] Telegram alert failed:", err.message);
         });
       });
   }
@@ -821,7 +882,7 @@ function evaluateAutoBuyCandidates(results) {
   if (window.telegramService && window.telegramService.isConfigured) {
     candidates.forEach((deal) => {
       window.telegramService.sendDealAlert(deal).catch((err) => {
-        console.error("[VinylFort] Telegram alert failed:", err.message);
+        console.error("[VinylVault] Telegram alert failed:", err.message);
       });
     });
   }
@@ -1123,7 +1184,7 @@ async function fetchAndShowEbaySoldInPanel() {
   const median = sorted[Math.floor(sorted.length / 2)]?.price;
   const rows = sorted.map((s) => `
     <div class="flex justify-between text-xs py-1 border-b border-gray-800">
-      <span class="text-gray-400">${s.condition} · ${s.date}</span>
+      <span class="text-gray-400">${[s.condition, s.date].filter(Boolean).join(" · ") || "eBay sold"}</span>
       <span class="text-gray-200 font-medium">£${parseFloat(s.price).toFixed(2)}</span>
     </div>`).join("");
 
@@ -1844,7 +1905,7 @@ function openEbaySoldSearch() {
 
 // ─── ValueYourMusic Sold Price Research ──────────────────────────────────────
 
-/** Map VinylFort condition codes to ValueYourMusic URL condition slugs. */
+/** Map VinylVault condition codes to ValueYourMusic URL condition slugs. */
 const VYM_CONDITION_MAP = {
   M: "mint",
   NM: "near-mint",
@@ -2594,4 +2655,5 @@ async function _dfRunArbitrage(release) {
 // Initialise assistant when DOM is ready
 document.addEventListener("DOMContentLoaded", () => {
   initDealFinderAssistant();
+  setupDealSearchAutosave();
 });

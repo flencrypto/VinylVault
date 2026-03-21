@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ (API 31) override for AppTheme.
+  Adds windowSplashScreen* attributes so the OS-managed launch screen matches
+  the VinylVault brand instead of showing a white flash before Chrome loads.
+  These attributes were added in API 31 — placing them here keeps the base
+  styles.xml compatible with minSdk 21.
+-->
+<resources>
+    <style name="AppTheme" parent="android:Theme.NoTitleBar">
+        <item name="android:windowBackground">@color/colorSurface</item>
+        <item name="android:statusBarColor">@color/colorSurface</item>
+        <item name="android:navigationBarColor">@color/colorSurface</item>
+
+        <!-- Native Android 12 splash screen: dark background + centered vinyl icon -->
+        <item name="android:windowSplashScreenBackground">@color/colorSurface</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash</item>
+    </style>
+</resources>

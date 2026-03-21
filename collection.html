@@ -4,15 +4,24 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VinylVault" />
+    <meta name="theme-color" content="#c8973f" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#c8973f" />
+    <meta name="description" content="Manage your vinyl record collection with valuations, condition grading, and eBay listing integration." />
     <title>My Collection - VinylVault Pro</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/static/icon-512.svg" />
+    <link rel="apple-touch-icon" href="/static/icon-192.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
-    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" integrity="sha256-uOhwxdKyl3LxDJ+pppPIuJaqyFQO1nAePMYwTGg/69s=" crossorigin="anonymous"></script>
     <!-- Preload critical resources -->
     <link rel="preload" href="components/vinyl-nav.js" as="script" />
     <link rel="preload" href="components/vinyl-footer.js" as="script" />
@@ -20,7 +29,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script>
       if (typeof tailwind !== "undefined")
         tailwind.config = {
@@ -44,6 +52,14 @@
           },
         };
     </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
   </head>
   <body class="bg-surface text-gray-100 min-h-screen">
     <a href="#main-content" class="skip-link">Skip to content</a>
@@ -225,6 +241,12 @@
         class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6"
       >
       </div>
+
+      <!-- Analytics — Portfolio Price Trend -->
+      <section class="mt-10">
+        <h2 class="text-2xl font-semibold mb-4">Portfolio Analytics</h2>
+        <price-trend-chart current-price="85"></price-trend-chart>
+      </section>
     </main>
 
     <!-- Import Modal -->
@@ -533,6 +555,29 @@
               <div id="verifyPhotoGrid" class="grid grid-cols-3 gap-2 mt-3">
                 <!-- Photo previews -->
               </div>
+              <!-- Tesseract OCR auto-fill -->
+              <button
+                id="verifyOcrBtn"
+                onclick="runVerifyOCR()"
+                class="hidden mt-3 w-full px-3 py-2 bg-surface border border-gray-600 rounded-lg text-sm text-gray-300 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2"
+                aria-label="Auto-fill fields from uploaded photos using OCR"
+              >
+                <i data-feather="type" class="w-4 h-4"></i>
+                <span id="verifyOcrBtnLabel">Auto-fill from Photo (OCR)</span>
+              </button>
+              <p id="verifyOcrStatus" class="hidden text-xs text-gray-500 mt-1 text-center"></p>
+
+              <!-- Scan Dead Wax button -->
+              <button
+                id="scanDeadWaxBtn"
+                onclick="scanDeadWax()"
+                class="hidden mt-3 w-full px-3 py-2 bg-surface border border-gray-600 rounded-lg text-sm text-gray-300 hover:border-primary hover:text-primary transition-all flex items-center justify-center gap-2"
+                aria-label="Scan dead wax/matrix from photo"
+              >
+                <i data-feather="search" class="w-4 h-4"></i>
+                <span id="scanDeadWaxBtnLabel">Scan Dead Wax</span>
+              </button>
+              <p id="scanDeadWaxStatus" class="hidden text-xs text-gray-500 mt-1 text-center"></p>
             </div>
           </div>
           <div class="flex gap-3 mt-6 pt-4 border-t border-gray-800">
@@ -561,9 +606,14 @@
     <script src="components/vinyl-nav.js"></script>
     <script src="components/vinyl-footer.js"></script>
     <script src="components/stat-card.js"></script>
+    <script src="components/price-trend-chart.js"></script>
     <script src="components/collection-service.js"></script>
     <script src="components/telegram-service.js"></script>
     <script src="components/deal-scanner.js"></script>
+    <script src="components/enhanced-ocr-service.js"></script>
+    <script src="components/tesseract-ocr-service.js"></script>
+    <script src="components/xai-service.js"></script>
+    <script src="components/pricing-intelligence-service.js"></script>
 
     <!-- Main Script -->
     <script src="script.js"></script>
@@ -599,5 +649,27 @@
         }
       });
     </script>
+
+    <!-- Bottom Navigation (mobile only) -->
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <div class="bottom-nav-inner">
+        <a href="index.html" class="bottom-nav-item" aria-label="New Listing">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          Listing
+        </a>
+        <a href="deals.html" class="bottom-nav-item" aria-label="Deal Finder">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          Deals
+        </a>
+        <a href="collection.html" class="bottom-nav-item active" aria-label="My Collection" aria-current="page">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+          Collection
+        </a>
+        <a href="settings.html" class="bottom-nav-item" aria-label="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+      </div>
+    </nav>
   </body>
 </html>

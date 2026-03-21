@@ -26,6 +26,8 @@ const DEAL_SCANNER_DEFAULTS = {
   minCondition: "VG+",
 };
 
+const CONDITION_ORDER = ["P", "F", "G", "G+", "VG", "VG+", "NM", "M"];
+
 class DealScanner {
   constructor() {
     this._timer = null;
@@ -56,8 +58,7 @@ class DealScanner {
   }
 
   _getConditionRank(condition) {
-    const order = ["P", "F", "G", "G+", "VG", "VG+", "NM", "M"];
-    const idx = order.indexOf((condition || "").toUpperCase());
+    const idx = CONDITION_ORDER.indexOf((condition || "").toUpperCase());
     return idx === -1 ? 0 : idx;
   }
 
@@ -90,6 +91,96 @@ class DealScanner {
     if (!artist || !title) return [];
 
     const found = [];
+
+    // --- Web Scraping Service (Alternative to API) ---
+    if (
+      window.webScrapingService &&
+      window.webScrapingService.isAvailable &&
+      config.useWebScraping !== false
+    ) {
+      try {
+        const query = `${artist} ${title}`;
+
+        // Scrape eBay listings
+        const ebayListings = await window.webScrapingService.scrapeEbayVinyl(query, 10);
+        for (const listing of ebayListings || []) {
+          const price = parseFloat(listing.price || 0);
+          const marketValue = parseFloat(
+            record.marketValue || record.estimated_value || 0,
+          );
+          if (!marketValue || price <= 0) continue;
+
+          const ebayFee = this._estimateFees(price);
+          const netProfit = marketValue - price - ebayFee;
+          const roi = price > 0 ? ((netProfit / price) * 100).toFixed(1) : 0;
+
+          const deal = {
+            artist,
+            title,
+            condition: listing.condition || "VG+",
+            price,
+            buyPrice: price,
+            adjustedValue: marketValue,
+            marketValue,
+            netProfit: Math.round(netProfit * 100) / 100,
+            roi: parseFloat(roi),
+            fees: Math.round(ebayFee * 100) / 100,
+            source: "eBay (Scraper)",
+            ebayItemId: listing.url ? listing.url.split('/').pop() : '',
+            releaseId: record.discogsReleaseId || record.release_id,
+            url: listing.url || "",
+            isHot: netProfit >= 8 && roi >= 40,
+            isViable: netProfit >= 3,
+            scraperData: listing.rawData
+          };
+
+          if (this._meetsThreshold(deal, config)) {
+            found.push(deal);
+          }
+        }
+
+        // Scrape Discogs listings
+        const discogsListings = await window.webScrapingService.scrapeDiscogsVinyl(query, 10);
+        for (const listing of discogsListings || []) {
+          const price = parseFloat(listing.price || 0);
+          const marketValue = parseFloat(
+            record.marketValue || record.estimated_value || 0,
+          );
+          if (!marketValue || price <= 0) continue;
+
+          const discogsFee = price * 0.08; // 8% Discogs fee
+          const netProfit = marketValue - price - discogsFee;
+          const roi = price > 0 ? ((netProfit / price) * 100).toFixed(1) : 0;
+
+          const deal = {
+            artist,
+            title,
+            condition: listing.condition || "VG+",
+            price,
+            buyPrice: price,
+            adjustedValue: marketValue,
+            marketValue,
+            netProfit: Math.round(netProfit * 100) / 100,
+            roi: parseFloat(roi),
+            fees: Math.round(discogsFee * 100) / 100,
+            source: "Discogs (Scraper)",
+            discogsListingId: listing.releaseId || '',
+            releaseId: record.discogsReleaseId || record.release_id,
+            url: listing.url || "",
+            isHot: netProfit >= 8 && roi >= 40,
+            isViable: netProfit >= 3,
+            scraperData: listing.rawData
+          };
+
+          if (this._meetsThreshold(deal, config)) {
+            found.push(deal);
+          }
+        }
+      } catch (_err) {
+        // Web scraping error — fall back to API methods
+        console.warn('Web scraping failed, falling back to API methods:', _err);
+      }
+    }
 
     // --- Discogs marketplace listings ---
     if (

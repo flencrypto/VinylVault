@@ -153,7 +153,7 @@ class TelegramNotifier {
 
     const ctaLine =
       tier.tier !== "good_deal"
-        ? "\n\n⚡ Auto-buy threshold met — check VinylFort Deals page"
+        ? "\n\n⚡ Auto-buy threshold met — check VinylVault Deals page"
         : "";
 
     return (
@@ -237,7 +237,7 @@ class TelegramNotifier {
    */
   async testConnection() {
     return this._sendMessage(
-      "✅ <b>VinylFort connected!</b>\n\nTelegram alerts are working correctly. You will receive deal notifications here when undervalued vinyl is detected.",
+      "✅ <b>VinylVault connected!</b>\n\nTelegram alerts are working correctly. You will receive deal notifications here when undervalued vinyl is detected.",
       false,
     );
   }

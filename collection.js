@@ -3,6 +3,17 @@ let collection = [];
 let pendingImports = [];
 let currentVerifyIndex = 0;
 let verifyPhotos = [];
+let _filterDebounceTimer = null;
+
+/** Escape a string for safe interpolation into HTML attribute or text content. */
+function escHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
 
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
@@ -263,11 +274,10 @@ function startPhotoVerification() {
     // All done - refresh final state
     renderCollection();
     updatePortfolioStats();
+    const now = Date.now();
     const importedCount = collection.filter((r) => {
       // Count recently added records (within last minute)
-      const added = new Date(r.dateAdded);
-      const now = new Date();
-      return now - added < 60000;
+      return now - new Date(r.dateAdded).getTime() < 60000;
     }).length;
     showToast(
       `Import complete! ${importedCount} records added to your collection.`,
@@ -316,6 +326,11 @@ function renderVerifyPhotos() {
   const grid = document.getElementById("verifyPhotoGrid");
   if (verifyPhotos.length === 0) {
     grid.innerHTML = "";
+    // Hide OCR button when no photos
+    const ocrBtn = document.getElementById("verifyOcrBtn");
+    const ocrStatus = document.getElementById("verifyOcrStatus");
+    if (ocrBtn) ocrBtn.classList.add("hidden");
+    if (ocrStatus) ocrStatus.classList.add("hidden");
     return;
   }
 
@@ -331,12 +346,99 @@ function renderVerifyPhotos() {
     `,
     )
     .join("");
+
+  // Show OCR button now that photos are available
+  const ocrBtn = document.getElementById("verifyOcrBtn");
+  if (ocrBtn) ocrBtn.classList.remove("hidden");
+
   feather.replace();
 }
 
 function removeVerifyPhoto(idx) {
   verifyPhotos.splice(idx, 1);
   renderVerifyPhotos();
+}
+
+/**
+ * Run Tesseract OCR on the currently uploaded verify photos and pre-fill
+ * the verification notes field with extracted text (artist, title, label,
+ * catalogue number, year).  The user can review and adjust before saving.
+ */
+async function runVerifyOCR() {
+  if (verifyPhotos.length === 0) {
+    showToast("Upload at least one photo first", "error");
+    return;
+  }
+
+  if (!window.tesseractOcrService) {
+    showToast("Tesseract OCR service is not available", "error");
+    return;
+  }
+
+  const btn = document.getElementById("verifyOcrBtn");
+  const label = document.getElementById("verifyOcrBtnLabel");
+  const status = document.getElementById("verifyOcrStatus");
+
+  if (btn) btn.disabled = true;
+  if (label) label.textContent = "Running OCR…";
+  if (status) {
+    status.textContent = "Loading OCR engine (first run may take a moment)…";
+    status.classList.remove("hidden");
+  }
+
+  try {
+    const result = await window.tesseractOcrService.analyzeRecordImages(
+      verifyPhotos,
+      (pct) => {
+        if (status) status.textContent = `OCR progress: ${pct}%`;
+      },
+    );
+
+    // Build a summary of what was found
+    const found = [];
+    if (result.artist) found.push(`Artist: ${result.artist}`);
+    if (result.title) found.push(`Title: ${result.title}`);
+    if (result.label) found.push(`Label: ${result.label}`);
+    if (result.catalogueNumber) found.push(`Cat#: ${result.catalogueNumber}`);
+    if (result.year) found.push(`Year: ${result.year}`);
+    if (result.country) found.push(`Country: ${result.country}`);
+    if (result.matrixRunoutA)
+      found.push(`Matrix A: ${result.matrixRunoutA}`);
+    if (result.matrixRunoutB)
+      found.push(`Matrix B: ${result.matrixRunoutB}`);
+
+    const notesField = document.getElementById("verifyNotes");
+    if (notesField) {
+      const ocrBlock = found.length > 0
+        ? `[OCR detected]\n${found.join("\n")}`
+        : "[OCR ran but could not extract structured data — check raw text in notes]";
+      const existing = notesField.value.trim();
+      notesField.value = existing
+        ? `${existing}\n\n${ocrBlock}`
+        : ocrBlock;
+    }
+
+    if (status) {
+      status.textContent =
+        found.length > 0
+          ? `OCR complete — ${found.length} field(s) detected (confidence: ${result.confidence})`
+          : "OCR complete — no structured data found";
+    }
+
+    showToast(
+      found.length > 0
+        ? `OCR found ${found.length} field(s) — check Notes`
+        : "OCR ran but found limited data",
+      found.length > 0 ? "success" : "error",
+    );
+  } catch (err) {
+    console.error("Tesseract OCR error:", err);
+    if (status) status.textContent = `OCR failed: ${err.message}`;
+    showToast(`OCR failed: ${err.message}`, "error");
+  } finally {
+    if (btn) btn.disabled = false;
+    if (label) label.textContent = "Auto-fill from Photo (OCR)";
+  }
 }
 async function saveVerifiedRecord() {
   const record = pendingImports[currentVerifyIndex];
@@ -437,49 +539,6 @@ function skipPhotoVerification() {
   currentVerifyIndex++;
   startPhotoVerification();
 }
-// Fetch eBay sold prices via Google search (no Discogs quota cost)
-async function fetchEbaySoldViaGoogle(artist, title, catalogueNumber) {
-  const cacheKey = `ebay_sold_${artist}_${title}_${catalogueNumber || ""}`.replace(/\s+/g, "_").toLowerCase();
-  const cached = localStorage.getItem(cacheKey);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (parsed.ts && Date.now() - parsed.ts < 86400000) { // 24 hours
-        return parsed.results;
-      }
-    } catch (_) { /* ignore invalid cache */ }
-  }
-
-  try {
-    const query = encodeURIComponent(`site:ebay.co.uk "${artist}" "${title}" vinyl sold`);
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://www.google.com/search?q=${query}&num=20`)}`;
-    const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) }); // 10s timeout
-    if (!response.ok) return [];
-    const html = await response.text();
-
-    // Extract price snippets from Google result text
-    const results = [];
-    // Match patterns like £12.50 or GBP 12.50 appearing near ebay.co.uk links
-    const snippetRegex = /ebay\.co\.uk[^"]*?["'][^<]*?([£$]|GBP\s*)([\d]+\.[\d]{2})/gi;
-    let match;
-    while ((match = snippetRegex.exec(html)) !== null && results.length < 10) {
-      const price = parseFloat(match[2]);
-      if (!isNaN(price) && price > 0.5 && price < 5000) { // sanity-check: plausible vinyl price range
-        results.push({ price, date: new Date().toISOString().split("T")[0], condition: "Unknown", source: "ebay_google" });
-      }
-    }
-
-    // Deduplicate by price
-    const seen = new Set();
-    const unique = results.filter((r) => { const k = r.price.toFixed(2); if (seen.has(k)) return false; seen.add(k); return true; });
-
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), results: unique }));
-    return unique;
-  } catch (e) {
-    console.log("eBay/Google fetch failed:", e);
-    return [];
-  }
-}
 
 // Market Analysis & Pricing with multi-source enrichment
 async function analyzeRecordForResale(record) {
@@ -523,8 +582,8 @@ async function analyzeRecordForResale(record) {
   // Step 3: Use AI for qualitative analysis only (never for prices)
   const aiProvider = localStorage.getItem("ai_provider") || "openai";
   const hasAI =
-    aiProvider === "deepseek"
-      ? localStorage.getItem("deepseek_api_key")
+    aiProvider === "xai"
+      ? localStorage.getItem("xai_api_key")
       : localStorage.getItem("openai_api_key");
 
   if (hasAI) {
@@ -582,8 +641,8 @@ async function analyzeRecordForResale(record) {
 async function fetchAIMarketAnalysis(record, existingData) {
   const provider = localStorage.getItem("ai_provider") || "openai";
   const apiKey =
-    provider === "deepseek"
-      ? localStorage.getItem("deepseek_api_key")
+    provider === "xai"
+      ? localStorage.getItem("xai_api_key")
       : localStorage.getItem("openai_api_key");
 
   if (!apiKey) return null;
@@ -613,8 +672,8 @@ Return ONLY this JSON (no other text):
 
   try {
     const response = await fetch(
-      provider === "deepseek"
-        ? "https://api.deepseek.com/v1/chat/completions"
+      provider === "xai"
+        ? "https://api.x.ai/v1/chat/completions"
         : "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
@@ -623,7 +682,7 @@ Return ONLY this JSON (no other text):
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: provider === "deepseek" ? "deepseek-chat" : "gpt-4o-mini",
+          model: provider === "xai" ? (localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning") : "gpt-4o-mini",
           messages: [
             {
               role: "system",
@@ -937,8 +996,7 @@ function renderCollection() {
   }
 
   grid.innerHTML = filtered
-    .map((record, idx) => {
-      const originalIdx = collection.indexOf(record);
+    .map(({ record, originalIdx }) => {
       const profitClass =
         (record.profitPotential || 0) >= 0 ? "text-profit" : "text-loss";
       const profitIcon =
@@ -1050,6 +1108,9 @@ function renderCollection() {
                             <button onclick="viewRecordDetail(${originalIdx})" class="p-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-all" title="View Details">
                                 <i data-feather="eye" class="w-4 h-4"></i>
                             </button>
+                            <a href="vinyl.html?idx=${originalIdx}" class="p-2 bg-primary/20 text-primary rounded-lg hover:bg-primary/30 transition-all" title="Full Page Details">
+                                <i data-feather="maximize-2" class="w-4 h-4"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1066,31 +1127,42 @@ function getFilteredCollection() {
     .value.toLowerCase();
   const status = document.getElementById("statusFilter").value;
 
-  let filtered = collection.filter((r) => {
+  // Build indexed list once; pre-lowercase string fields used for search
+  // and pre-compute the dateAdded timestamp for sort comparisons
+  const indexed = collection.map((record, idx) => ({
+    record,
+    originalIdx: idx,
+    artistLower: (record.artist || "").toLowerCase(),
+    titleLower: (record.title || "").toLowerCase(),
+    catLower: (record.catalogueNumber || "").toLowerCase(),
+    dateTs: record.dateAdded ? new Date(record.dateAdded).getTime() : 0,
+  }));
+
+  let filtered = indexed.filter(({ record, artistLower, titleLower, catLower }) => {
     const matchesSearch =
       !search ||
-      r.artist.toLowerCase().includes(search) ||
-      r.title.toLowerCase().includes(search) ||
-      (r.catalogueNumber && r.catalogueNumber.toLowerCase().includes(search));
-    const matchesStatus = status === "all" || r.status === status;
+      artistLower.includes(search) ||
+      titleLower.includes(search) ||
+      catLower.includes(search);
+    const matchesStatus = status === "all" || record.status === status;
     return matchesSearch && matchesStatus;
   });
 
-  // Sort
+  // Sort using pre-computed fields — no Date construction inside the comparator
   const sortBy = document.getElementById("sortBy").value;
   filtered.sort((a, b) => {
     switch (sortBy) {
       case "artist":
-        return a.artist.localeCompare(b.artist);
+        return a.artistLower.localeCompare(b.artistLower);
       case "purchasePrice":
-        return (b.purchasePrice || 0) - (a.purchasePrice || 0);
+        return (b.record.purchasePrice || 0) - (a.record.purchasePrice || 0);
       case "estValue":
-        return (b.estimatedValue || 0) - (a.estimatedValue || 0);
+        return (b.record.estimatedValue || 0) - (a.record.estimatedValue || 0);
       case "profit":
-        return (b.profitPotential || 0) - (a.profitPotential || 0);
+        return (b.record.profitPotential || 0) - (a.record.profitPotential || 0);
       case "dateAdded":
       default:
-        return new Date(b.dateAdded) - new Date(a.dateAdded);
+        return b.dateTs - a.dateTs;
     }
   });
 
@@ -1098,27 +1170,25 @@ function getFilteredCollection() {
 }
 
 function filterCollection() {
-  renderCollection();
+  clearTimeout(_filterDebounceTimer);
+  _filterDebounceTimer = setTimeout(renderCollection, 150);
 }
 
 function sortCollection() {
   renderCollection();
 }
 function updatePortfolioStats() {
-  // Calculate stats from collection
+  // Calculate stats from collection in a single pass
   const totalRecords = collection.length;
-  const totalInvested = collection.reduce(
-    (sum, r) => sum + (parseFloat(r.purchasePrice) || 0),
-    0,
-  );
-  const totalValue = collection.reduce(
-    (sum, r) =>
-      sum +
-      (parseFloat(r.estimatedValue) ||
-        parseFloat(r.csvMarketData?.median) ||
-        0),
-    0,
-  );
+  let totalInvested = 0;
+  let totalValue = 0;
+  for (const r of collection) {
+    totalInvested += parseFloat(r.purchasePrice) || 0;
+    totalValue +=
+      parseFloat(r.estimatedValue) ||
+      parseFloat(r.csvMarketData?.median) ||
+      0;
+  }
   const totalProfit = totalValue - totalInvested;
   const roi =
     totalInvested > 0 ? ((totalProfit / totalInvested) * 100).toFixed(1) : 0;
@@ -1211,9 +1281,10 @@ function viewRecordDetail(index) {
                           const priceDisplay = `£${parseFloat(sale.price).toFixed(2)}${sale.notes ? ` (${sale.notes})` : ""}`;
                           const linkOpen = sale.url ? `<a href="${sale.url}" target="_blank" rel="noopener noreferrer" class="hover:underline text-primary">` : "";
                           const linkClose = sale.url ? `</a>` : "";
+                          const meta = [sale.condition, sale.date].filter(Boolean).join(" • ");
                           return `
                         <div class="flex justify-between text-sm">
-                            <span class="text-gray-400">${sale.condition} • ${sale.date}</span>
+                            <span class="text-gray-400">${meta || "eBay sold"}</span>
                             <span class="text-gray-200">${linkOpen}${priceDisplay}${linkClose}</span>
                         </div>
                     `;
@@ -1272,10 +1343,13 @@ ${
             <button onclick="closeRecordModal()" class="text-gray-400 hover:text-white">
                 <i data-feather="x" class="w-6 h-6"></i>
             </button>
+            <a href="vinyl.html?idx=${index}" class="ml-2 text-gray-400 hover:text-primary" title="Open full page">
+                <i data-feather="maximize-2" class="w-5 h-5"></i>
+            </a>
         </div>
         <div class="p-6 overflow-y-auto max-h-[70vh]">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Left: Photos -->
+                <!-- Left: Photos & Camera Capture -->
                 <div>
                     ${
                       record.photos[0]
@@ -1294,6 +1368,55 @@ ${
                     `
                         : '<div class="aspect-square bg-surface rounded-xl flex items-center justify-center text-gray-600"><i data-feather="disc" class="w-16 h-16"></i></div>'
                     }
+                    
+                    <!-- Camera Capture Section -->
+                    <div class="mt-4 bg-surface/60 border border-gray-700 rounded-lg p-4">
+                        <h4 class="text-sm font-medium text-gray-300 mb-3 flex items-center gap-2">
+                            <i data-feather="camera" class="w-4 h-4"></i>
+                            Capture Matrix/Runout Photos
+                        </h4>
+                        
+                        <div class="space-y-3">
+                            <!-- Camera Preview -->
+                            <div id="cameraPreview_${index}" class="aspect-video bg-black rounded-lg border border-gray-600 flex items-center justify-center hidden">
+                                <video id="cameraVideo_${index}" autoplay playsinline class="w-full h-full object-cover rounded-lg"></video>
+                                <canvas id="cameraCanvas_${index}" class="hidden"></canvas>
+                            </div>
+                            
+                            <!-- Camera Controls -->
+                            <div class="flex gap-2">
+                                <button onclick="startCamera(${index})" class="px-3 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/80 transition-all flex items-center gap-2">
+                                    <i data-feather="camera" class="w-4 h-4"></i>
+                                    Open Camera
+                                </button>
+                                <button onclick="capturePhoto(${index})" id="captureBtn_${index}" class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-all flex items-center gap-2 hidden">
+                                    <i data-feather="aperture" class="w-4 h-4"></i>
+                                    Capture
+                                </button>
+                                <button onclick="stopCamera(${index})" id="stopBtn_${index}" class="px-3 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-all flex items-center gap-2 hidden">
+                                    <i data-feather="x" class="w-4 h-4"></i>
+                                    Close
+                                </button>
+                            </div>
+                            
+                            <!-- OCR Results Preview -->
+                            <div id="ocrPreview_${index}" class="bg-surface-light p-3 rounded-lg border border-gray-600 hidden">
+                                <h5 class="text-xs font-medium text-gray-400 mb-2">OCR Results</h5>
+                                <div id="ocrText_${index}" class="text-sm text-gray-300 font-mono max-h-20 overflow-y-auto"></div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-xs text-gray-500">Confidence:</span>
+                                    <span id="ocrConfidence_${index}" class="text-xs px-2 py-1 rounded-full bg-gray-600 text-white">Processing...</span>
+                                </div>
+                            </div>
+                            
+                            <!-- File Upload Fallback -->
+                            <div class="border-t border-gray-600 pt-3 mt-3">
+                                <label class="text-xs text-gray-400 mb-2 block">Or upload photos:</label>
+                                <input type="file" id="photoUpload_${index}" accept="image/*" multiple class="w-full text-sm text-gray-300"
+                                       onchange="handlePhotoUpload(${index}, this.files)">
+                            </div>
+                        </div>
+                    </div>
                     
                     ${marketDataHtml}
                 </div>
@@ -1927,10 +2050,16 @@ function changeRecordImages(index) {
           style="padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:8px;color:white;cursor:not-allowed;opacity:0.5;font-weight:600;font-size:0.9em">
           🤖 Update Details with AI Lookup
         </button>
+        <button id="ocrOnlyBtn" onclick="runOCROnlyExtraction()" disabled
+          style="padding:12px;background:#0f172a;border:1px solid #475569;border-radius:8px;color:#94a3b8;cursor:not-allowed;opacity:0.5;font-weight:600;font-size:0.9em">
+          🔤 OCR Text Extraction (no AI key needed)
+        </button>
       </div>
+      <p id="changeImagesOcrStatus" style="display:none;color:#64748b;font-size:0.75em;margin:8px 0 0;text-align:center"></p>
       <p style="color:#475569;font-size:0.75em;margin:12px 0 0;text-align:center;line-height:1.5">
         <strong style="color:#64748b">Just Update Images</strong> saves the photos without changing any details.<br>
-        <strong style="color:#64748b">AI Lookup</strong> analyses photos, finds the Discogs release, and updates all details.
+        <strong style="color:#64748b">AI Lookup</strong> analyses photos, finds the Discogs release, and updates all details.<br>
+        <strong style="color:#64748b">OCR Extraction</strong> reads text from photos locally — no API key required.
       </p>
     </div>`;
   document.body.appendChild(modal);
@@ -1951,8 +2080,10 @@ function handleChangeImagesFiles(event) {
 
   const justBtn = document.getElementById("justUpdateImagesBtn");
   const aiBtn = document.getElementById("aiLookupImagesBtn");
+  const ocrBtn = document.getElementById("ocrOnlyBtn");
   if (justBtn) { justBtn.disabled = false; justBtn.style.cursor = "pointer"; justBtn.style.opacity = "1"; }
   if (aiBtn) { aiBtn.disabled = false; aiBtn.style.cursor = "pointer"; aiBtn.style.opacity = "1"; }
+  if (ocrBtn) { ocrBtn.disabled = false; ocrBtn.style.cursor = "pointer"; ocrBtn.style.opacity = "1"; ocrBtn.style.color = "#e2e8f0"; }
 }
 
 async function saveJustImages() {
@@ -1996,13 +2127,58 @@ async function runAILookupOnImages() {
     let detection = { artist: record.artist, title: record.title, catalogueNumber: record.catalogueNumber, year: record.year, label: record.label, confidence: "low" };
 
     // Try AI OCR if configured
-    const apiKey = localStorage.getItem("openai_api_key") || localStorage.getItem("deepseek_api_key");
-    if (apiKey && typeof EnhancedOCRService !== "undefined") {
+    const aiProvider = localStorage.getItem("ai_provider") || "openai";
+    const xaiModel =
+      localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
+    const useXai =
+      aiProvider === "xai" &&
+      localStorage.getItem("xai_api_key") &&
+      typeof XAIService !== "undefined" &&
+      window.xaiService?.isVisionModel(xaiModel);
+    const apiKey = useXai
+      ? localStorage.getItem("xai_api_key")
+      : localStorage.getItem("openai_api_key");
+
+    if (apiKey) {
       try {
-        const ocrService = new EnhancedOCRService();
-        detection = await ocrService.analyzeRecordImages(files);
+        let ocrResult;
+        if (useXai) {
+          window.xaiService.updateApiKey(apiKey);
+          window.xaiService.updateModel(xaiModel);
+          ocrResult = await window.xaiService.analyzeRecordImages(files);
+        } else if (typeof EnhancedOCRService !== "undefined") {
+          const ocrService = new EnhancedOCRService();
+          ocrService.updateApiKey(apiKey);
+          ocrResult = await ocrService.analyzeRecordImages(files);
+        }
+        if (ocrResult) detection = ocrResult;
       } catch (e) {
         console.log("OCR failed, using record data:", e.message);
+      }
+    } else if (aiProvider === "xai" && localStorage.getItem("xai_api_key")) {
+      // xAI is configured but the selected model is not vision-capable — inform the user
+      // instead of silently skipping OCR (which would leave fields unchanged).
+      showToast(
+        `The selected xAI model (${xaiModel}) cannot analyze images. Choose a vision-capable model (e.g. grok-4-1-fast-reasoning) in Settings.`,
+        "error",
+      );
+    } else if (window.tesseractOcrService) {
+      // No AI API key configured — fall back to free client-side Tesseract OCR
+      if (aiBtn) aiBtn.textContent = "🔤 Running OCR…";
+      try {
+        const tesseractResult = await window.tesseractOcrService.analyzeRecordImages(files);
+        if (tesseractResult && tesseractResult.confidence !== "low") {
+          // Merge only non-null/defined fields so existing detection values
+          // are not overwritten by null defaults from the Tesseract parser.
+          const filtered = Object.fromEntries(
+            Object.entries(tesseractResult).filter(
+              ([, v]) => v !== null && v !== undefined,
+            ),
+          );
+          detection = { ...detection, ...filtered };
+        }
+      } catch (e) {
+        console.log("Tesseract OCR failed:", e.message);
       }
     }
 
@@ -2035,6 +2211,128 @@ async function runAILookupOnImages() {
     showToast("AI lookup failed: " + e.message, "error");
     if (aiBtn) { aiBtn.textContent = "🤖 Update Details with AI Lookup"; aiBtn.disabled = false; aiBtn.style.opacity = "1"; }
   }
+}
+
+/**
+ * Run client-side Tesseract OCR on the selected Change Images photos and
+ * display the detected fields in a confirmation panel — no AI key required.
+ */
+async function runOCROnlyExtraction() {
+  const index = window._changeImagesIndex;
+  const files = window._changeImagesFiles || [];
+  if (!files.length) { showToast("No images selected", "error"); return; }
+  if (!window.tesseractOcrService) { showToast("Tesseract OCR service not available", "error"); return; }
+
+  const ocrBtn = document.getElementById("ocrOnlyBtn");
+  const ocrStatus = document.getElementById("changeImagesOcrStatus");
+  if (ocrBtn) { ocrBtn.textContent = "🔤 Running OCR…"; ocrBtn.disabled = true; ocrBtn.style.opacity = "0.7"; }
+  if (ocrStatus) { ocrStatus.textContent = "Loading OCR engine…"; ocrStatus.style.display = "block"; }
+
+  try {
+    const result = await window.tesseractOcrService.analyzeRecordImages(files, (pct) => {
+      if (ocrStatus) ocrStatus.textContent = `OCR progress: ${pct}%`;
+    });
+
+    if (ocrStatus) ocrStatus.style.display = "none";
+    showOCRExtractionPanel(index, result);
+  } catch (e) {
+    console.error("OCR extraction failed:", e);
+    showToast("OCR failed: " + e.message, "error");
+    if (ocrBtn) { ocrBtn.textContent = "🔤 OCR Text Extraction (no AI key needed)"; ocrBtn.disabled = false; ocrBtn.style.opacity = "1"; }
+    if (ocrStatus) ocrStatus.style.display = "none";
+  }
+}
+
+/**
+ * Show OCR results panel in the changeImagesModal, letting the user
+ * choose which detected fields to apply to the record.
+ * @param {number} index - collection record index
+ * @param {Object} ocrData - parsed OCR result from TesseractOCRService
+ */
+function showOCRExtractionPanel(index, ocrData) {
+  const modal = document.getElementById("changeImagesModal");
+  if (!modal) return;
+  const inner = modal.querySelector("div");
+
+  const fields = [
+    { key: "artist", label: "Artist", value: ocrData.artist },
+    { key: "title", label: "Title", value: ocrData.title },
+    { key: "label", label: "Label", value: ocrData.label },
+    { key: "catalogueNumber", label: "Cat #", value: ocrData.catalogueNumber },
+    { key: "year", label: "Year", value: ocrData.year },
+    { key: "country", label: "Country", value: ocrData.country },
+    { key: "matrixRunoutA", label: "Matrix A", value: ocrData.matrixRunoutA },
+    { key: "matrixRunoutB", label: "Matrix B", value: ocrData.matrixRunoutB },
+  ].filter((f) => f.value);
+
+  const fieldsHtml = fields.length > 0
+    ? fields.map((f) => `
+        <label style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1e293b;cursor:pointer">
+          <input type="checkbox" name="ocrField" data-key="${escHtml(f.key)}" data-value="${escHtml(String(f.value))}" checked
+            style="accent-color:#c8973f;width:16px;height:16px">
+          <span style="color:#94a3b8;font-size:0.8em;min-width:70px">${escHtml(f.label)}:</span>
+          <span style="color:#e2e8f0;font-size:0.85em">${escHtml(String(f.value))}</span>
+        </label>`).join("")
+    : `<p style="color:#f59e0b;font-size:0.85em;padding:8px 0">OCR could not extract structured fields from these images. Try clearer photos of the label or sleeve.</p>`;
+
+  inner.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="margin:0;font-size:1.1em;color:#e2e8f0">🔤 OCR Detected Fields</h3>
+      <button onclick="document.getElementById('changeImagesModal').remove()" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:1.4em;line-height:1">✕</button>
+    </div>
+    <p style="color:#94a3b8;font-size:0.8em;margin-bottom:8px">
+      Confidence: <strong style="color:${ocrData.confidence === 'high' ? '#4ade80' : ocrData.confidence === 'medium' ? '#f59e0b' : '#ef4444'}">${ocrData.confidence || 'low'}</strong>
+      — select the fields you want to apply:
+    </p>
+    <div style="max-height:260px;overflow-y:auto;background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 12px;margin-bottom:16px">
+      ${fieldsHtml}
+    </div>
+    <div style="display:grid;gap:10px">
+      ${fields.length > 0 ? `
+      <button onclick="applyOCRFields(${index})"
+        style="padding:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:none;border-radius:8px;color:white;cursor:pointer;font-weight:600;font-size:0.9em">
+        ✓ Apply Selected Fields to Record
+      </button>` : ""}
+      <button onclick="document.getElementById('changeImagesModal').remove()"
+        style="padding:12px;background:transparent;border:1px solid #475569;border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.9em">
+        ✕ Cancel
+      </button>
+    </div>`;
+}
+
+/**
+ * Apply OCR-detected fields chosen by the user to the collection record.
+ * @param {number} index - collection record index
+ */
+function applyOCRFields(index) {
+  const checkboxes = document.querySelectorAll('input[name="ocrField"]:checked');
+  if (checkboxes.length === 0) {
+    showToast("No fields selected", "error");
+    return;
+  }
+
+  const record = collection[index];
+  checkboxes.forEach((cb) => {
+    const key = cb.dataset.key;
+    const value = cb.dataset.value;
+    if (key && value !== undefined) {
+      if (key === "year") {
+        const parsed = parseInt(value, 10);
+        // Only store if it's a plausible vinyl era year; otherwise skip
+        record[key] = parsed >= 1900 && parsed <= 2100 ? parsed : null;
+      } else {
+        record[key] = value;
+      }
+    }
+  });
+
+  saveCollection();
+  renderCollection();
+  const modal = document.getElementById("changeImagesModal");
+  if (modal) modal.remove();
+  closeRecordModal();
+  viewRecordDetail(index);
+  showToast(`Applied ${checkboxes.length} OCR field(s) to record`, "success");
 }
 
 function showAILookupConfirmation(index, detection, discogsMatch) {

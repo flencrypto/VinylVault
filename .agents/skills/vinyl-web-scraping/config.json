@@ -1,0 +1,27 @@
+{
+  "name": "vinyl-web-scraping",
+  "version": "1.0.0",
+  "description": "Automated web scraping for vinyl record listings",
+  "dependencies": [
+    "playwright",
+    "python3"
+  ],
+  "supported_platforms": [
+    "ebay.com",
+    "discogs.com"
+  ],
+  "default_settings": {
+    "headless": true,
+    "delay_min": 2,
+    "delay_max": 4,
+    "timeout": 30000
+  },
+  "data_points": [
+    "title",
+    "price", 
+    "condition",
+    "seller",
+    "url",
+    "domain"
+  ]
+}

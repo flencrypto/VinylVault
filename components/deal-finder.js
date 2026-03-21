@@ -140,11 +140,13 @@ class DealFinder extends HTMLElement {
     };
   }
 
-  analyzeDeal(artist, title, buyPrice, listedCondition, discogsData = null) {
-    // If we have Discogs data, use it for better estimation
+  analyzeDeal(artist, title, buyPrice, listedCondition, discogsData = null, scraperData = null) {
+    // If we have scraper data, use it for better estimation
     let estimatedValue = 15; // Default fallback
 
-    if (discogsData) {
+    if (scraperData && scraperData.marketValue) {
+      estimatedValue = scraperData.marketValue;
+    } else if (discogsData) {
       if (discogsData.lowest_price) {
         estimatedValue = discogsData.lowest_price;
       } else if (discogsData.median) {
@@ -164,12 +166,82 @@ class DealFinder extends HTMLElement {
       ...metrics,
       discogsUrl: discogsData?.uri || null,
       releaseId: discogsData?.id || null,
+      scraperData: scraperData || null,
       timestamp: Date.now(),
     };
   }
 
   formatCurrency(amount) {
     return "£" + parseFloat(amount).toFixed(2);
+  }
+
+  async scrapeMarketplaceDeals(artist, title, marketplace = "ebay", maxResults = 20) {
+    if (!window.webScrapingService || !window.webScrapingService.isAvailable) {
+      throw new Error("Web scraping service is not available");
+    }
+
+    try {
+      let listings = [];
+      const query = `${artist} ${title}`;
+
+      switch (marketplace.toLowerCase()) {
+        case "ebay":
+          listings = await window.webScrapingService.scrapeEbayVinyl(query, maxResults);
+          break;
+        case "discogs":
+          listings = await window.webScrapingService.scrapeDiscogsVinyl(query, maxResults);
+          break;
+        case "amazon":
+          listings = await window.webScrapingService.scrapeAmazonVinyl(query, maxResults);
+          break;
+        default:
+          throw new Error(`Unsupported marketplace: ${marketplace}`);
+      }
+
+      // Analyze each listing
+      const deals = [];
+      for (const listing of listings) {
+        const deal = this.analyzeDeal(
+          artist,
+          title,
+          listing.price,
+          listing.condition
+        );
+        
+        // Add marketplace-specific data
+        deals.push({
+          ...deal,
+          marketplace: listing.marketplace,
+          url: listing.url,
+          seller: listing.seller,
+          imageUrl: listing.imageUrl,
+          shipping: listing.shipping || 0,
+          scraperData: listing.rawData
+        });
+      }
+
+      return deals.sort((a, b) => b.score - a.score);
+    } catch (error) {
+      console.error(`Error scraping ${marketplace}:`, error);
+      throw error;
+    }
+  }
+
+  async scrapeAllMarketplaces(artist, title, maxResultsPerMarket = 10) {
+    const marketplaces = ["ebay", "discogs", "amazon"];
+    const allDeals = [];
+
+    for (const marketplace of marketplaces) {
+      try {
+        const deals = await this.scrapeMarketplaceDeals(artist, title, marketplace, maxResultsPerMarket);
+        allDeals.push(...deals);
+      } catch (error) {
+        console.warn(`Failed to scrape ${marketplace}:`, error);
+        // Continue with other marketplaces
+      }
+    }
+
+    return allDeals.sort((a, b) => b.score - a.score);
   }
 }
 
