@@ -27,7 +27,10 @@
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script>
       if (typeof tailwind !== "undefined")
         tailwind.config = {
@@ -35,8 +38,8 @@
           theme: {
             extend: {
               fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
-                serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+                sans: ["Inter", "system-ui", "sans-serif"],
+                serif: ["Cormorant Garamond", "Georgia", "serif"],
               },
               colors: {
                 primary: "#c8973f",
@@ -63,7 +66,10 @@
     <vinyl-nav></vinyl-nav>
 
     <!-- Main Content -->
-    <main id="main-content" class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto">
+    <main
+      id="main-content"
+      class="pt-20 pb-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto"
+    >
       <!-- Page Header -->
       <section class="mb-8">
         <h1
@@ -474,17 +480,23 @@
         <!-- eBay API Credentials -->
         <div class="bg-surface-light rounded-2xl p-8 border border-gray-800">
           <h2 class="text-xl font-semibold text-gray-200 mb-2">eBay API</h2>
-          <div class="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3">
-            <i data-feather="info" class="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0"></i>
+          <div
+            class="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex items-start gap-3"
+          >
+            <i
+              data-feather="info"
+              class="w-4 h-4 text-yellow-400 mt-0.5 flex-shrink-0"
+            ></i>
             <p class="text-xs text-yellow-300">
-              eBay API integration is temporarily paused while credentials are being set up.
-              Use the <strong>Open eBay</strong> button on the Deal Finder page to browse manually.
-              Save your credentials below for when the API is re-enabled.
+              eBay API integration is temporarily paused while credentials are
+              being set up. Use the <strong>Open eBay</strong> button on the
+              Deal Finder page to browse manually. Save your credentials below
+              for when the API is re-enabled.
             </p>
           </div>
           <p class="text-sm text-gray-500 mb-6">
-            Used by the Deal Finder to search live eBay listings and place Buy-It-Now orders.
-            Obtain credentials at
+            Used by the Deal Finder to search live eBay listings and place
+            Buy-It-Now orders. Obtain credentials at
             <a
               href="https://developer.ebay.com/my/keys"
               target="_blank"
@@ -543,8 +555,11 @@
                 aria-label="eBay User Access Token"
               />
               <p class="text-xs text-gray-600 mt-1">
-                Required for placing auto-buy orders. Obtain via authorization-code OAuth flow with scope
-                <code class="text-gray-400">https://api.ebay.com/oauth/api_scope/buy.order</code>.
+                Required for placing auto-buy orders. Obtain via
+                authorization-code OAuth flow with scope
+                <code class="text-gray-400"
+                  >https://api.ebay.com/oauth/api_scope/buy.order</code
+                >.
               </p>
             </div>
 
@@ -599,14 +614,23 @@
             <div
               class="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center"
             >
-              <svg class="w-6 h-6 text-sky-400" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+              <svg
+                class="w-6 h-6 text-sky-400"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path
+                  d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"
+                />
               </svg>
             </div>
             <div>
-              <h2 class="text-xl font-semibold text-gray-200">Telegram Alerts</h2>
+              <h2 class="text-xl font-semibold text-gray-200">
+                Telegram Alerts
+              </h2>
               <p class="text-sm text-gray-500">
-                Receive instant notifications when undervalued vinyl deals are detected
+                Receive instant notifications when undervalued vinyl deals are
+                detected
               </p>
             </div>
           </div>
@@ -632,7 +656,8 @@
                 </button>
               </div>
               <p class="text-xs text-gray-600 mt-2">
-                Message <strong class="text-gray-500">@BotFather</strong> on Telegram → /newbot → copy the token
+                Message <strong class="text-gray-500">@BotFather</strong> on
+                Telegram → /newbot → copy the token
               </p>
             </div>
 
@@ -648,21 +673,30 @@
                 aria-label="Telegram chat ID"
               />
               <p class="text-xs text-gray-600 mt-2">
-                Message <strong class="text-gray-500">@userinfobot</strong> on Telegram to get your chat ID
+                Message <strong class="text-gray-500">@userinfobot</strong> on
+                Telegram to get your chat ID
               </p>
             </div>
 
             <!-- Alert Thresholds -->
             <div class="pt-4 border-t border-gray-800">
-              <h3 class="text-sm font-medium text-gray-300 mb-4">Alert Thresholds</h3>
+              <h3 class="text-sm font-medium text-gray-300 mb-4">
+                Alert Thresholds
+              </h3>
               <div class="space-y-3">
                 <!-- Enable toggle -->
                 <div class="flex items-center justify-between">
                   <div>
-                    <p class="text-gray-300 text-sm font-medium">Enable Telegram Alerts</p>
-                    <p class="text-xs text-gray-500">Send deal notifications to Telegram</p>
+                    <p class="text-gray-300 text-sm font-medium">
+                      Enable Telegram Alerts
+                    </p>
+                    <p class="text-xs text-gray-500">
+                      Send deal notifications to Telegram
+                    </p>
                   </div>
-                  <label class="relative inline-flex items-center cursor-pointer">
+                  <label
+                    class="relative inline-flex items-center cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       id="telegramEnabled"
@@ -678,7 +712,9 @@
                 <!-- Threshold inputs grid -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                   <div>
-                    <label class="block text-xs text-gray-500 mb-1">Minimum ROI (%)</label>
+                    <label class="block text-xs text-gray-500 mb-1"
+                      >Minimum ROI (%)</label
+                    >
                     <input
                       type="number"
                       id="telegramMinRoi"
@@ -690,7 +726,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs text-gray-500 mb-1">Minimum Profit (£)</label>
+                    <label class="block text-xs text-gray-500 mb-1"
+                      >Minimum Profit (£)</label
+                    >
                     <input
                       type="number"
                       id="telegramMinProfit"
@@ -702,7 +740,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs text-gray-500 mb-1">Maximum Buy Price (£)</label>
+                    <label class="block text-xs text-gray-500 mb-1"
+                      >Maximum Buy Price (£)</label
+                    >
                     <input
                       type="number"
                       id="telegramMaxPrice"
@@ -713,7 +753,9 @@
                     />
                   </div>
                   <div>
-                    <label class="block text-xs text-gray-500 mb-1">Minimum Condition</label>
+                    <label class="block text-xs text-gray-500 mb-1"
+                      >Minimum Condition</label
+                    >
                     <select
                       id="telegramMinCondition"
                       class="w-full px-3 py-2 bg-surface border border-gray-700 rounded-lg focus:border-primary focus:outline-none text-sm"
@@ -874,12 +916,7 @@
         const xaiModel =
           localStorage.getItem("xai_model") || "grok-4-1-fast-reasoning";
 
-        // Set default Discogs token if not already configured
-        let discogsToken = localStorage.getItem("discogs_token");
-        if (!discogsToken) {
-          discogsToken = "yTaawtvDVkIKoAHAoAgnDIhFerblgTTCNXmFDthy";
-          localStorage.setItem("discogs_token", discogsToken);
-        }
+        const discogsToken = localStorage.getItem("discogs_token");
 
         const discogsKey = localStorage.getItem("discogs_key");
         const discogsSecret = localStorage.getItem("discogs_secret");
@@ -914,13 +951,18 @@
 
         // eBay credentials
         const ebayClientId = localStorage.getItem("ebay_client_id") || "";
-        const ebayClientSecret = localStorage.getItem("ebay_client_secret") || "";
+        const ebayClientSecret =
+          localStorage.getItem("ebay_client_secret") || "";
         const ebayUserToken = localStorage.getItem("ebay_user_token") || "";
-        const ebayMarketplace = localStorage.getItem("ebay_marketplace_id") || "EBAY_GB";
+        const ebayMarketplace =
+          localStorage.getItem("ebay_marketplace_id") || "EBAY_GB";
 
-        if (ebayClientId) document.getElementById("ebayClientId").value = ebayClientId;
-        if (ebayClientSecret) document.getElementById("ebayClientSecret").value = ebayClientSecret;
-        if (ebayUserToken) document.getElementById("ebayUserToken").value = ebayUserToken;
+        if (ebayClientId)
+          document.getElementById("ebayClientId").value = ebayClientId;
+        if (ebayClientSecret)
+          document.getElementById("ebayClientSecret").value = ebayClientSecret;
+        if (ebayUserToken)
+          document.getElementById("ebayUserToken").value = ebayUserToken;
         document.getElementById("ebayMarketplace").value = ebayMarketplace;
 
         if (ebayClientId && ebayClientSecret) {
@@ -928,24 +970,32 @@
         }
 
         // Telegram credentials
-        const telegramBotToken = localStorage.getItem("telegram_bot_token") || "";
+        const telegramBotToken =
+          localStorage.getItem("telegram_bot_token") || "";
         const telegramChatId = localStorage.getItem("telegram_chat_id") || "";
         const telegramAlertsConfig = JSON.parse(
           localStorage.getItem("telegram_alerts_config") || "{}",
         );
-        if (telegramBotToken) document.getElementById("telegramBotToken").value = telegramBotToken;
-        if (telegramChatId) document.getElementById("telegramChatId").value = telegramChatId;
+        if (telegramBotToken)
+          document.getElementById("telegramBotToken").value = telegramBotToken;
+        if (telegramChatId)
+          document.getElementById("telegramChatId").value = telegramChatId;
         if (telegramBotToken && telegramChatId) updateTelegramStatus(true);
         if (telegramAlertsConfig.enabled !== undefined)
-          document.getElementById("telegramEnabled").checked = !!telegramAlertsConfig.enabled;
+          document.getElementById("telegramEnabled").checked =
+            !!telegramAlertsConfig.enabled;
         if (telegramAlertsConfig.minRoi !== undefined)
-          document.getElementById("telegramMinRoi").value = telegramAlertsConfig.minRoi;
+          document.getElementById("telegramMinRoi").value =
+            telegramAlertsConfig.minRoi;
         if (telegramAlertsConfig.minProfit !== undefined)
-          document.getElementById("telegramMinProfit").value = telegramAlertsConfig.minProfit;
+          document.getElementById("telegramMinProfit").value =
+            telegramAlertsConfig.minProfit;
         if (telegramAlertsConfig.maxPrice !== undefined)
-          document.getElementById("telegramMaxPrice").value = telegramAlertsConfig.maxPrice;
+          document.getElementById("telegramMaxPrice").value =
+            telegramAlertsConfig.maxPrice;
         if (telegramAlertsConfig.minCondition)
-          document.getElementById("telegramMinCondition").value = telegramAlertsConfig.minCondition;
+          document.getElementById("telegramMinCondition").value =
+            telegramAlertsConfig.minCondition;
       });
 
       function toggleImgbbVisibility() {
@@ -983,7 +1033,7 @@
         const statusEl = document.getElementById("openaiStatus");
         if (connected) {
           statusEl.innerHTML =
-            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Connected</span>';
+            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Configured</span>';
         } else {
           statusEl.innerHTML =
             '<span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-500">Not configured</span>';
@@ -994,7 +1044,7 @@
         const statusEl = document.getElementById("discogsStatus");
         if (connected) {
           statusEl.innerHTML =
-            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Connected</span>';
+            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Configured</span>';
         } else {
           statusEl.innerHTML =
             '<span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-500">Not configured</span>';
@@ -1005,7 +1055,7 @@
         const statusEl = document.getElementById("xaiStatus");
         if (connected) {
           statusEl.innerHTML =
-            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Connected</span>';
+            '<span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-green-400">Configured</span>';
         } else {
           statusEl.innerHTML =
             '<span class="w-2 h-2 rounded-full bg-gray-600"></span><span class="text-gray-500">Not configured</span>';
@@ -1024,7 +1074,97 @@
           showToast("imgBB settings cleared", "warning");
         }
       }
+
+      function persistAllSettingsFromForm() {
+        const imgbbKey = document.getElementById("imgbbKey").value.trim();
+        if (imgbbKey) localStorage.setItem("imgbb_api_key", imgbbKey);
+        else localStorage.removeItem("imgbb_api_key");
+
+        const openaiKey = document.getElementById("openaiKey").value.trim();
+        const openaiModel = document.getElementById("openaiModel").value;
+        const openaiMaxTokens = document.getElementById("maxTokens").value;
+        if (openaiKey) {
+          localStorage.setItem("openai_api_key", openaiKey);
+          localStorage.setItem("openai_model", openaiModel);
+          localStorage.setItem("openai_max_tokens", openaiMaxTokens);
+          localStorage.setItem("ai_provider", "openai");
+        } else {
+          localStorage.removeItem("openai_api_key");
+        }
+
+        const deepseekKey = document.getElementById("deepseekKey").value.trim();
+        const deepseekModel = document.getElementById("deepseekModel").value;
+        if (deepseekKey) {
+          localStorage.setItem("deepseek_api_key", deepseekKey);
+          localStorage.setItem("deepseek_model", deepseekModel);
+          localStorage.setItem("ai_provider", "deepseek");
+        } else {
+          localStorage.removeItem("deepseek_api_key");
+        }
+
+        const discogsToken = document
+          .getElementById("discogsToken")
+          .value.trim();
+        const discogsKey = document.getElementById("discogsKey").value.trim();
+        const discogsSecret = document
+          .getElementById("discogsSecret")
+          .value.trim();
+        if (discogsToken) {
+          localStorage.setItem("discogs_token", discogsToken);
+          localStorage.removeItem("discogs_key");
+          localStorage.removeItem("discogs_secret");
+          window.discogsService.updateCredentials("", "", discogsToken);
+        } else if (discogsKey && discogsSecret) {
+          localStorage.setItem("discogs_key", discogsKey);
+          localStorage.setItem("discogs_secret", discogsSecret);
+          localStorage.removeItem("discogs_token");
+          window.discogsService.updateCredentials(
+            discogsKey,
+            discogsSecret,
+            "",
+          );
+        }
+
+        const ebayClientId = document
+          .getElementById("ebayClientId")
+          .value.trim();
+        const ebayClientSecret = document
+          .getElementById("ebayClientSecret")
+          .value.trim();
+        const ebayUserToken = document
+          .getElementById("ebayUserToken")
+          .value.trim();
+        const ebayMarketplace =
+          document.getElementById("ebayMarketplace").value;
+        window.ebayService.updateCredentials({
+          clientId: ebayClientId,
+          clientSecret: ebayClientSecret,
+          userAccessToken: ebayUserToken,
+          marketplaceId: ebayMarketplace,
+        });
+
+        const telegramToken = document
+          .getElementById("telegramBotToken")
+          .value.trim();
+        const telegramChatId = document
+          .getElementById("telegramChatId")
+          .value.trim();
+        if (telegramToken)
+          localStorage.setItem("telegram_bot_token", telegramToken);
+        else localStorage.removeItem("telegram_bot_token");
+        if (telegramChatId)
+          localStorage.setItem("telegram_chat_id", telegramChatId);
+        else localStorage.removeItem("telegram_chat_id");
+        if (window.telegramService) {
+          window.telegramService.updateCredentials(
+            telegramToken,
+            telegramChatId,
+          );
+        }
+      }
+
       async function testOpenAIConnection() {
+        persistAllSettingsFromForm();
         const key = document.getElementById("openaiKey").value.trim();
         if (!key) {
           showToast("Please enter an API key first", "error");
@@ -1117,6 +1257,7 @@
         }
       }
       async function testDiscogsConnection() {
+        persistAllSettingsFromForm();
         const token = document.getElementById("discogsToken").value.trim();
         const key = document.getElementById("discogsKey").value.trim();
         const secret = document.getElementById("discogsSecret").value.trim();
@@ -1243,7 +1384,9 @@
 
       function saveEbaySettings() {
         const clientId = document.getElementById("ebayClientId").value.trim();
-        const clientSecret = document.getElementById("ebayClientSecret").value.trim();
+        const clientSecret = document
+          .getElementById("ebayClientSecret")
+          .value.trim();
         const userToken = document.getElementById("ebayUserToken").value.trim();
         const marketplace = document.getElementById("ebayMarketplace").value;
 
@@ -1259,13 +1402,14 @@
       }
 
       async function testEbayConnection() {
+        persistAllSettingsFromForm();
         if (!window.ebayService.hasSearchCredentials) {
           showToast("Enter eBay Client ID and Client Secret first.", "error");
           return;
         }
         showToast("Testing eBay connection…", "success");
         try {
-          await window.ebayService.getAppToken();
+          await window.ebayService.testConnection();
           showToast("eBay connection successful!", "success");
           updateEbayStatus(true);
         } catch (err) {
@@ -1294,10 +1438,14 @@
         const token = document.getElementById("telegramBotToken").value.trim();
         const chatId = document.getElementById("telegramChatId").value.trim();
         const enabled = document.getElementById("telegramEnabled").checked;
-        const minRoi = parseFloat(document.getElementById("telegramMinRoi").value) || 40;
-        const minProfit = parseFloat(document.getElementById("telegramMinProfit").value) || 8;
-        const maxPrice = parseFloat(document.getElementById("telegramMaxPrice").value) || 100;
-        const minCondition = document.getElementById("telegramMinCondition").value || "VG+";
+        const minRoi =
+          parseFloat(document.getElementById("telegramMinRoi").value) || 40;
+        const minProfit =
+          parseFloat(document.getElementById("telegramMinProfit").value) || 8;
+        const maxPrice =
+          parseFloat(document.getElementById("telegramMaxPrice").value) || 100;
+        const minCondition =
+          document.getElementById("telegramMinCondition").value || "VG+";
 
         if (token) {
           localStorage.setItem("telegram_bot_token", token);
@@ -1310,8 +1458,17 @@
           localStorage.removeItem("telegram_chat_id");
         }
 
-        const alertsConfig = { enabled, minRoi, minProfit, maxPrice, minCondition };
-        localStorage.setItem("telegram_alerts_config", JSON.stringify(alertsConfig));
+        const alertsConfig = {
+          enabled,
+          minRoi,
+          minProfit,
+          maxPrice,
+          minCondition,
+        };
+        localStorage.setItem(
+          "telegram_alerts_config",
+          JSON.stringify(alertsConfig),
+        );
 
         if (window.telegramService) {
           window.telegramService.updateCredentials(token, chatId);
@@ -1322,6 +1479,7 @@
       }
 
       async function testTelegramConnection() {
+        persistAllSettingsFromForm();
         const token = document.getElementById("telegramBotToken").value.trim();
         const chatId = document.getElementById("telegramChatId").value.trim();
         if (!token || !chatId) {

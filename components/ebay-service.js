@@ -36,7 +36,12 @@ class EbayService {
   // Credential management
   // ---------------------------------------------------------------------------
 
-  updateCredentials({ clientId, clientSecret, userAccessToken, marketplaceId } = {}) {
+  updateCredentials({
+    clientId,
+    clientSecret,
+    userAccessToken,
+    marketplaceId,
+  } = {}) {
     if (clientId !== undefined) {
       this.clientId = clientId;
       localStorage.setItem("ebay_client_id", clientId);
@@ -63,7 +68,7 @@ class EbayService {
   }
 
   get hasBuyCredentials() {
-    return !!(this.userAccessToken);
+    return !!this.userAccessToken;
   }
 
   // ---------------------------------------------------------------------------
@@ -93,9 +98,7 @@ class EbayService {
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
-      throw new Error(
-        `eBay OAuth error ${response.status}: ${text}`,
-      );
+      throw new Error(`eBay OAuth error ${response.status}: ${text}`);
     }
 
     const data = await response.json();
@@ -103,6 +106,33 @@ class EbayService {
     // Expire 5 minutes early to avoid edge cases
     this._appTokenExpiry = Date.now() + (data.expires_in - 300) * 1000;
     return this._appToken;
+  }
+
+  /**
+   * Validate configured eBay credentials by requesting an app token and
+   * performing a lightweight Browse API request.
+   *
+   * @returns {Promise<{ok: true}>}
+   */
+  async testConnection() {
+    const token = await this.getAppToken();
+    const response = await fetch(
+      `${this.browseBase}/item_summary/search?q=vinyl&limit=1`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "X-EBAY-C-MARKETPLACE-ID": this.marketplaceId,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`eBay Browse API ${response.status}: ${text}`);
+    }
+
+    return { ok: true };
   }
 
   // ---------------------------------------------------------------------------
@@ -122,12 +152,7 @@ class EbayService {
    */
   async searchListings(query, opts = {}) {
     const token = await this.getAppToken();
-    const {
-      limit = 20,
-      filter = "",
-      sort = "",
-      completedOnly = false,
-    } = opts;
+    const { limit = 20, filter = "", sort = "", completedOnly = false } = opts;
 
     const params = new URLSearchParams({
       q: query,
@@ -191,10 +216,14 @@ class EbayService {
    */
   async getCheapestListing(artist, title) {
     try {
-      const results = await this.searchRecord(artist, title, { limit: 5, sort: "price" });
+      const results = await this.searchRecord(artist, title, {
+        limit: 5,
+        sort: "price",
+      });
       // Prefer BIN (Buy It Now) over auctions
       const bin = results.find(
-        (item) => item.buyingOptions && item.buyingOptions.includes("FIXED_PRICE"),
+        (item) =>
+          item.buyingOptions && item.buyingOptions.includes("FIXED_PRICE"),
       );
       return bin || results[0] || null;
     } catch {
