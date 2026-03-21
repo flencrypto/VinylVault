@@ -34,9 +34,39 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script
+          src="https://unpkg.com/@elevenlabs/convai-widget-embed"
+          async
+          type="text/javascript"
+        />
+      </head>
       <body className="antialiased">
         {children}
-        <ServiceWorkerRegister />
+        {/* ElevenLabs Conversational AI Widget */}
+        <div
+          dangerouslySetInnerHTML={{
+            __html: '<elevenlabs-convai agent-id="agent_9101kgpbsbwkfazrdcnxxddsnk1c"></elevenlabs-convai>',
+          }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.addEventListener('DOMContentLoaded', () => {
+                const widget = document.querySelector('elevenlabs-convai');
+                if (widget) {
+                  widget.addEventListener('elevenlabs-convai:call', (event) => {
+                    event.detail.config.clientTools = {
+                      redirectToExternalURL: ({ url }) => {
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      },
+                    };
+                  });
+                }
+              });
+            `,
+          }}
+        />
       </body>
     </html>
   )
